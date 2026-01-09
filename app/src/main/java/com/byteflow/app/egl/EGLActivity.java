@@ -81,30 +81,20 @@ public class EGLActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         int shaderIndex = 0;
-        switch (id) {
-            case R.id.action_shader0:
-                shaderIndex = 0;
-                break;
-            case R.id.action_shader1:
-                shaderIndex = 1;
-                break;
-
-            case R.id.action_shader2:
-                shaderIndex = 2;
-                break;
-            case R.id.action_shader3:
-                shaderIndex = 3;
-                break;
-            case R.id.action_shader4:
-                shaderIndex = 4;
-                break;
-            case R.id.action_shader5:
-                shaderIndex = 5;
-                break;
-            case R.id.action_shader6:
-                shaderIndex = 6;
-                break;
-                default:
+        if (id == R.id.action_shader0) {
+            shaderIndex = 0;
+        } else if (id == R.id.action_shader1) {
+            shaderIndex = 1;
+        } else if (id == R.id.action_shader2) {
+            shaderIndex = 2;
+        } else if (id == R.id.action_shader3) {
+            shaderIndex = 3;
+        } else if (id == R.id.action_shader4) {
+            shaderIndex = 4;
+        } else if (id == R.id.action_shader5) {
+            shaderIndex = 5;
+        } else if (id == R.id.action_shader6) {
+            shaderIndex = 6;
         }
 
         if (mBgRender != null) {
