@@ -4,15 +4,24 @@
  * https://github.com/githubhaohao/NDK_OpenGLES_3_0
  * 最新文章首发于公众号：字节流动，有疑问或者技术交流可以添加微信 Byte-Flow ,领取视频教程, 拉你进技术交流群
  *
+ * FBO大长腿特效示例
+ * 本示例实现了图像局部拉伸效果（类似美颜相机的大长腿功能）
+ * 核心原理：
+ * 1. 通过动态调整顶点坐标和纹理坐标实现局部拉伸
+ * 2. 使用FBO进行离屏渲染，将拉伸后的图像渲染到纹理
+ * 3. 支持垂直拉伸（大长腿）和水平拉伸（宽身体）两种模式
+ * 4. 根据拉伸区域位置自动选择4点、6点或8点网格变形
  * */
 
 #include <GLUtils.h>
 #include <gtc/matrix_transform.hpp>
 #include "FBOLegLengthenSample.h"
 
-#define VERTEX_POS_INDX  0
-#define TEXTURE_POS_INDX 1
+// 顶点属性索引定义
+#define VERTEX_POS_INDX  0   // 顶点位置属性索引
+#define TEXTURE_POS_INDX 1   // 纹理坐标属性索引
 
+// 普通渲染的顶点着色器（用于将FBO纹理渲染到屏幕）
 const char vShaderStr[] =
 		"#version 300 es                            \n"
 		"layout(location = 0) in vec4 a_position;   \n"
@@ -25,6 +34,7 @@ const char vShaderStr[] =
 		"   v_texCoord = a_texCoord;                \n"
 		"}                                          \n";
 
+// 普通渲染的片段着色器（简单的纹理采样）
 const char fShaderStr[] =
 		"#version 300 es\n"
 		"precision mediump float;\n"
@@ -36,6 +46,7 @@ const char fShaderStr[] =
 		"    outColor = texture(s_TextureMap, v_texCoord);\n"
 		"}";
 
+// FBO离屏渲染的顶点着色器（用于生成拉伸效果）
 const char vFboShaderStr[] =
 		"#version 300 es                            \n"
 		"layout(location = 0) in vec4 a_position;   \n"
@@ -48,6 +59,7 @@ const char vFboShaderStr[] =
 		"   v_texCoord = a_texCoord;                \n"
 		"}                                          \n";
 
+// FBO离屏渲染的片段着色器
 const char fFboShaderStr[] =
 		"#version 300 es\n"
 		"precision mediump float;\n"
@@ -60,30 +72,43 @@ const char fFboShaderStr[] =
 		"    float luminance = tempColor.r * 0.299 + tempColor.g * 0.587 + tempColor.b * 0.114;\n"
 		"    //outColor = vec4(vec3(luminance), tempColor.a);\n"
 		"    outColor = tempColor;\n"
-		"}"; // 输出灰度图
+		"}"; // 输出原图（可选输出灰度图）
 
+// 垂直拉伸8点网格的索引数组（3个矩形，6个三角形）
+// 将图像分成3段：上部不变区域、中部拉伸区域、下部不变区域
 const GLushort V_EIGHT_POINT_INDICES[] = { 0, 1, 2,  0, 2, 3,  1, 4, 7,  1, 7, 2,  4, 5, 6,  4, 6, 7};
+
+// 垂直拉伸6点网格的索引数组（2个矩形，4个三角形）
+// 将图像分成2段：一段拉伸区域、一段不变区域
 const GLushort V_SIX_POINT_INDICES[] = { 0, 1, 2,  0, 2, 3,  1, 4, 5,  1, 5, 2};
 
+// 水平拉伸8点网格的索引数组
 const GLushort H_EIGHT_POINT_INDICES[] = { 0, 1, 2,  0, 2, 3,  3, 2, 5,  3, 5, 4,  4, 5, 6,  4, 6, 7};
+
+// 水平拉伸6点网格的索引数组
 const GLushort H_SIX_POINT_INDICES[] = { 0, 1, 2,  0, 2, 3,  3, 2, 5,  3, 5, 4,};
 
+// 4点网格索引数组（全图拉伸或不拉伸）
 const GLushort FOUR_POINT_INDICES[] = { 0, 1, 2,  0, 2, 3};
 
+// 构造函数：初始化成员变量
 FBOLegLengthenSample::FBOLegLengthenSample()
 {
-	m_ImageTextureId = GL_NONE;
-	m_FboTextureId = GL_NONE;
-	m_SamplerLoc = GL_NONE;
-	m_FboId = GL_NONE;
-	m_FboProgramObj = GL_NONE;
-	m_FboVertexShader = GL_NONE;
-	m_FboFragmentShader = GL_NONE;
-	m_FboSamplerLoc = GL_NONE;
+	// OpenGL对象ID初始化
+	m_ImageTextureId = GL_NONE;      // 输入图像纹理
+	m_FboTextureId = GL_NONE;        // FBO输出纹理（拉伸后的图像）
+	m_SamplerLoc = GL_NONE;          // 普通渲染的采样器位置
+	m_FboId = GL_NONE;               // FBO对象ID
+	m_FboProgramObj = GL_NONE;       // FBO离屏渲染的着色器程序
+	m_FboVertexShader = GL_NONE;     // FBO顶点着色器
+	m_FboFragmentShader = GL_NONE;   // FBO片段着色器
+	m_FboSamplerLoc = GL_NONE;       // FBO采样器位置
 
-	m_dt = 0.0;
-	m_isgo = true;
+	// 动画参数
+	m_dt = 0.0;        // 拉伸偏移量（动态变化，实现动画效果）
+	m_isgo = true;     // 动画方向标志
 
+	// 默认拉伸模式：垂直8点拉伸（大长腿效果）
 	m_StretchMode = VERTICAL_STRETCH_8_POINTS;
 }
 
@@ -104,41 +129,53 @@ void FBOLegLengthenSample::LoadImage(NativeImage *pImage)
 	}
 }
 
+// 初始化OpenGL资源和拉伸参数
 void FBOLegLengthenSample::Init()
 {
+	// 设置拉伸模式：true为垂直拉伸（大长腿），false为水平拉伸
 	m_bIsVerticalMode = true;
 
+	// 定义拉伸区域（像素坐标）
+	// 这里设置拉伸图像的下半部分（腿部区域）
 	RectF inRectF;
 	inRectF.left = 0.0f ;
 	inRectF.right = m_RenderImage.width;
-	inRectF.top = m_RenderImage.height * 0.5f;
-	inRectF.bottom = m_RenderImage.height;
+	inRectF.top = m_RenderImage.height * 0.5f;    // 从图像中间开始
+	inRectF.bottom = m_RenderImage.height;        // 到图像底部
 
+	// 将像素坐标归一化到[0,1]范围（纹理坐标）
 	m_StretchRect.left = inRectF.left / m_RenderImage.width;
 	m_StretchRect.right = inRectF.right / m_RenderImage.width;
 	m_StretchRect.top = inRectF.top / m_RenderImage.height;
 	m_StretchRect.bottom = inRectF.bottom / m_RenderImage.height;
 
-	if (m_bIsVerticalMode)
+	// 根据拉伸区域位置自动选择合适的网格模式
+	// 不同的网格模式使用不同数量的顶点，优化性能
+	if (m_bIsVerticalMode)  // 垂直拉伸模式
 	{
 		if (m_StretchRect.top == 0 && m_StretchRect.bottom == 1.0f)
 		{
+			// 拉伸整个图像，使用4点网格（2个三角形）
 			m_StretchMode = VERTICAL_STRETCH_4_POINTS;
 		}
 		else if (m_StretchRect.top == 0.0f)
 		{
+			// 从顶部开始拉伸，使用6点网格（4个三角形）
 			m_StretchMode = VERTICAL_STRETCH_TOP_6_POINTS;
 		}
 		else if (m_StretchRect.bottom == 1.0f)
 		{
+			// 拉伸到底部，使用6点网格（4个三角形）
 			m_StretchMode = VERTICAL_STRETCH_BOTTOM_6_POINTS;
 		}
 		else
 		{
+			// 拉伸中间区域，使用8点网格（6个三角形）
+			// 这是最常用的模式，可以保持上下部分不变，只拉伸中间
 			m_StretchMode = VERTICAL_STRETCH_8_POINTS;
 		}
 	}
-	else
+	else  // 水平拉伸模式
 	{
 		if (m_StretchRect.left == 0 && m_StretchRect.right == 1.0f)
 		{
@@ -158,30 +195,34 @@ void FBOLegLengthenSample::Init()
 		}
 	}
 
+	// 动画控制：m_dt在[-0.2, 0.2]范围内往返变化
+	// 这样可以实现拉伸效果的动态演示
 	if (m_dt <= -0.2)
 	{
-		m_isgo = true;
+		m_isgo = true;   // 开始正向增加
 	}
 
 	if (m_dt >= 0.2)
 	{
-		m_isgo = false;
+		m_isgo = false;  // 开始反向减少
 	}
 
 	if (m_isgo)
 	{
-		m_dt += 0.01;
+		m_dt += 0.01;  // 增加拉伸量
 	}
 	else
 	{
-		m_dt -= 0.01;
+		m_dt -= 0.01;  // 减少拉伸量
 	}
 
-	float y1 = 1 - 2 * m_StretchRect.top;
-	float y2 = 1 - 2 * m_StretchRect.bottom;
-	float x1 = 2 * m_StretchRect.left - 1;
-	float x2 = 2 * m_StretchRect.right - 1;
+	// 将纹理坐标[0,1]转换为NDC坐标[-1,1]
+	float y1 = 1 - 2 * m_StretchRect.top;      // 拉伸区域上边界的NDC坐标
+	float y2 = 1 - 2 * m_StretchRect.bottom;   // 拉伸区域下边界的NDC坐标
+	float x1 = 2 * m_StretchRect.left - 1;     // 拉伸区域左边界的NDC坐标
+	float x2 = 2 * m_StretchRect.right - 1;    // 拉伸区域右边界的NDC坐标
 
+	// 计算图像宽高比，用于保持图像比例
 	float wbl = m_RenderImage.width*1.0f / m_RenderImage.height;
 	float hbl = 1 / wbl;
 	if (wbl > hbl)
@@ -193,20 +234,24 @@ void FBOLegLengthenSample::Init()
 		hbl = 1.0f;
 	}
 
-	/**vertical 顶点坐标*/
+	/**垂直拉伸的顶点坐标（用于最终显示到屏幕）
+	 * 这4个顶点定义了显示矩形，通过m_dt控制上下拉伸
+	 * */
 	GLfloat vVertices[] = {
-			-0.8f * wbl,   0.8f* hbl + m_dt*0.8f, 0.0f,
-			-0.8f * wbl,  -0.8f* hbl - m_dt*0.8f, 0.0f,
-			 0.8f * wbl,  -0.8f* hbl - m_dt*0.8f, 0.0f,
-			 0.8f * wbl,   0.8f* hbl + m_dt*0.8f, 0.0f,
+			-0.8f * wbl,   0.8f* hbl + m_dt*0.8f, 0.0f,  // 左上角（向上拉伸）
+			-0.8f * wbl,  -0.8f* hbl - m_dt*0.8f, 0.0f,  // 左下角（向下拉伸）
+			 0.8f * wbl,  -0.8f* hbl - m_dt*0.8f, 0.0f,  // 右下角（向下拉伸）
+			 0.8f * wbl,   0.8f* hbl + m_dt*0.8f, 0.0f,  // 右上角（向上拉伸）
 	};
 
-	/**horizontal 顶点坐标*/
+	/**水平拉伸的顶点坐标（用于最终显示到屏幕）
+	 * 这4个顶点定义了显示矩形，通过m_dt控制左右拉伸
+	 * */
 	GLfloat vHVertices[] = {
-			-0.8f * wbl  - m_dt*0.8f,   0.8f* hbl, 0.0f,
-			-0.8f * wbl  - m_dt*0.8f,  -0.8f* hbl, 0.0f,
-			 0.8f * wbl  + m_dt*0.8f,  -0.8f* hbl, 0.0f,
-			 0.8f * wbl  + m_dt*0.8f,   0.8f* hbl, 0.0f,
+			-0.8f * wbl  - m_dt*0.8f,   0.8f* hbl, 0.0f,  // 左上角（向左拉伸）
+			-0.8f * wbl  - m_dt*0.8f,  -0.8f* hbl, 0.0f,  // 左下角（向左拉伸）
+			 0.8f * wbl  + m_dt*0.8f,  -0.8f* hbl, 0.0f,  // 右下角（向右拉伸）
+			 0.8f * wbl  + m_dt*0.8f,   0.8f* hbl, 0.0f,  // 右上角（向右拉伸）
 	};
 //	GLfloat vHVertices[] = {
 //			-0.8f   - m_dt*0.8f,   0.8f, 0.0f,
@@ -215,39 +260,48 @@ void FBOLegLengthenSample::Init()
 //			0.8f  + m_dt*0.8f,   0.8f, 0.0f,
 //	};
 
-	//正常纹理坐标
+	// 标准纹理坐标（用于最终显示）
 	GLfloat vTexCoors[] = {
-			0.0f, 0.0f,
-			0.0f, 1.0f,
-			1.0f, 1.0f,
-			1.0f, 0.0f,
+			0.0f, 0.0f,  // 左下
+			0.0f, 1.0f,  // 左上
+			1.0f, 1.0f,  // 右上
+			1.0f, 0.0f,  // 右下
 	};
 
 
-	/** 8 points vertical*/
+	/**垂直8点网格的顶点坐标（用于FBO离屏渲染）
+	 * 8个顶点将图像分成3个区域：
+	 * - 顶部4个顶点（0-3）：不拉伸区域
+	 * - 中部：拉伸区域（通过调整y1和y2实现）
+	 * - 底部4个顶点（4-7）：不拉伸区域
+	 * m_dt控制拉伸量，正值向外拉伸，负值向内压缩
+	 * */
 	GLfloat vEightPointsFboVertices[] = {
-			-1.0f,  1.0f, 0.0f,
-			-1.0f,  y1 + m_dt, 0.0f,
-			 1.0f,  y1 + m_dt, 0.0f,
-			 1.0f,  1.0f, 0.0f,
+			-1.0f,  1.0f, 0.0f,              // 顶点0：左上角（固定）
+			-1.0f,  y1 + m_dt, 0.0f,         // 顶点1：拉伸区域上边界左侧（动态）
+			 1.0f,  y1 + m_dt, 0.0f,         // 顶点2：拉伸区域上边界右侧（动态）
+			 1.0f,  1.0f, 0.0f,              // 顶点3：右上角（固定）
 
-			-1.0f,  y2 - m_dt, 0.0f,
-			-1.0f, -1.0f , 0.0f,
-			 1.0f, -1.0f, 0.0f,
-			 1.0f,  y2 - m_dt, 0.0f,
+			-1.0f,  y2 - m_dt, 0.0f,         // 顶点4：拉伸区域下边界左侧（动态）
+			-1.0f, -1.0f , 0.0f,             // 顶点5：左下角（固定）
+			 1.0f, -1.0f, 0.0f,              // 顶点6：右下角（固定）
+			 1.0f,  y2 - m_dt, 0.0f,         // 顶点7：拉伸区域下边界右侧（动态）
 	};
 
-	//fbo 纹理坐标
+	/**垂直8点网格的纹理坐标（用于FBO离屏渲染）
+	 * 纹理坐标对应顶点坐标，确保正确的纹理映射
+	 * 关键点：y1和y2位置的纹理坐标保持不变，只改变顶点位置，实现拉伸效果
+	 * */
 	GLfloat vEightPointsFboTexCoors[] = {
-			0.0f, 0.0f,
-			0.0f, m_StretchRect.top,
-			1.0f, m_StretchRect.top,
-			1.0f, 0.0f,
+			0.0f, 0.0f,                      // 对应顶点0
+			0.0f, m_StretchRect.top,         // 对应顶点1（拉伸区域上边界）
+			1.0f, m_StretchRect.top,         // 对应顶点2
+			1.0f, 0.0f,                      // 对应顶点3
 
-			0.0f, m_StretchRect.bottom,
-			0.0f, 1.0f,
-			1.0f, 1.0f,
-			1.0f, m_StretchRect.bottom,
+			0.0f, m_StretchRect.bottom,      // 对应顶点4（拉伸区域下边界）
+			0.0f, 1.0f,                      // 对应顶点5
+			1.0f, 1.0f,                      // 对应顶点6
+			1.0f, m_StretchRect.bottom,      // 对应顶点7
 	};
 
 	/** 8 points horizontal*/

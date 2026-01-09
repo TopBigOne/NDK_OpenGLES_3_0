@@ -26,6 +26,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import java.io.File;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -226,21 +227,41 @@ public class MainActivity extends AppCompatActivity implements AudioCollector.Ca
         mSensorManager.registerListener(this,
                 mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY),
                 SensorManager.SENSOR_DELAY_FASTEST);
-        if (!hasPermissionsGranted(REQUEST_PERMISSIONS)) {
-            ActivityCompat.requestPermissions(this, REQUEST_PERMISSIONS, PERMISSION_REQUEST_CODE);
+
+        // Android 13+ (API 33+) 已废弃 WRITE_EXTERNAL_STORAGE 权限
+        // 访问 getExternalFilesDir() 不需要任何权限
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            // Android 13+: 只请求录音权限
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSION_REQUEST_CODE);
+            }
+            // 无论是否有录音权限，都可以访问应用专属目录
+            copyAssetsToSDCard();
+        } else {
+            // Android 12 及以下：请求存储和录音权限
+            if (!hasPermissionsGranted(REQUEST_PERMISSIONS)) {
+                ActivityCompat.requestPermissions(this, REQUEST_PERMISSIONS, PERMISSION_REQUEST_CODE);
+            } else {
+                copyAssetsToSDCard();
+            }
         }
-        ///sdcard/Android/data/com.byteflow.app/files/Download
-        String fileDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath();
-        CommonUtils.copyAssetsDirToSDCard(MainActivity.this, "poly", fileDir + "/model");
-        CommonUtils.copyAssetsDirToSDCard(MainActivity.this, "fonts", fileDir);
-        CommonUtils.copyAssetsDirToSDCard(MainActivity.this, "yuv", fileDir);
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == PERMISSION_REQUEST_CODE) {
-            if (!hasPermissionsGranted(REQUEST_PERMISSIONS)) {
-                Toast.makeText(this, "We need the permission: WRITE_EXTERNAL_STORAGE", Toast.LENGTH_SHORT).show();
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                // Android 13+: 文件复制已在 onResume 中执行，这里只处理录音权限被拒绝的情况
+                // 录音权限只在需要时使用，不影响基本功能
+            } else {
+                // Android 12 及以下：需要所有权限才能执行文件操作
+                if (hasPermissionsGranted(REQUEST_PERMISSIONS)) {
+                    copyAssetsToSDCard();
+                } else {
+                    Toast.makeText(this, "We need the permission: WRITE_EXTERNAL_STORAGE", Toast.LENGTH_SHORT).show();
+                }
             }
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -791,6 +812,27 @@ public class MainActivity extends AppCompatActivity implements AudioCollector.Ca
             }
         }
 
+    }
+
+    /**
+     * 将Assets中的文件复制到SDCard
+     */
+    private void copyAssetsToSDCard() {
+        try {
+            ///sdcard/Android/data/com.byteflow.app/files/Download
+            File externalDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+            if (externalDir != null) {
+                String fileDir = externalDir.getAbsolutePath();
+                CommonUtils.copyAssetsDirToSDCard(MainActivity.this, "poly", fileDir + "/model");
+                CommonUtils.copyAssetsDirToSDCard(MainActivity.this, "fonts", fileDir);
+                CommonUtils.copyAssetsDirToSDCard(MainActivity.this, "yuv", fileDir);
+            } else {
+                Toast.makeText(this, "无法访问外部存储目录", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "复制文件失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     protected boolean hasPermissionsGranted(String[] permissions) {

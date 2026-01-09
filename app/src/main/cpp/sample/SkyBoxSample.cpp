@@ -4,37 +4,59 @@
  * https://github.com/githubhaohao/NDK_OpenGLES_3_0
  * 最新文章首发于公众号：字节流动，有疑问或者技术交流可以添加微信 Byte-Flow ,领取视频教程, 拉你进技术交流群
  *
+ * 天空盒（立方体贴图）示例
+ *
+ * 功能说明：
+ * - 使用立方体贴图（Cube Map）实现天空盒效果
+ * - 演示环境反射和环境折射效果
+ * - 支持同时渲染天空盒和带反射/折射效果的立方体
+ *
+ * 立方体贴图原理：
+ * - 立方体贴图由 6 张纹理组成，对应立方体的 6 个面（+X, -X, +Y, -Y, +Z, -Z）
+ * - 使用 GL_TEXTURE_CUBE_MAP 纹理类型
+ * - 通过 3D 方向向量采样纹理（而不是 2D 纹理坐标）
+ *
  * */
 
 #include <gtc/matrix_transform.hpp>
 #include "SkyBoxSample.h"
 #include "../util/GLUtils.h"
 
+/**
+ * 构造函数
+ * 初始化天空盒和立方体的着色器、纹理、VAO 等
+ */
 SkyBoxSample::SkyBoxSample():
-m_CubeProgramObj(GL_NONE)
+m_CubeProgramObj(GL_NONE)  // 立方体着色器程序
 {
 
-	m_SamplerLoc = GL_NONE;
-	m_MVPMatLoc = GL_NONE;
+	m_SamplerLoc = GL_NONE;      // 天空盒纹理采样器位置
+	m_MVPMatLoc = GL_NONE;       // 天空盒 MVP 矩阵位置
 
-	m_TextureId = GL_NONE;
-	m_SkyBoxVaoId = GL_NONE;
+	m_TextureId = GL_NONE;       // 立方体贴图纹理 ID
+	m_SkyBoxVaoId = GL_NONE;     // 天空盒 VAO
 
-	m_AngleX = 0;
-	m_AngleY = 0;
+	m_AngleX = 0;  // X 轴旋转角度
+	m_AngleY = 0;  // Y 轴旋转角度
 
-	m_ScaleX = 1.0f;
-	m_ScaleY = 1.0f;
+	m_ScaleX = 1.0f;  // X 轴缩放
+	m_ScaleY = 1.0f;  // Y 轴缩放
 
-	m_ModelMatrix = glm::mat4(0.0f);
+	m_ModelMatrix = glm::mat4(0.0f);  // 模型矩阵
 
+	// 初始化 6 张天空盒纹理图像数组
 	memset(m_pSkyBoxRenderImg, 0, sizeof(NativeImage) * 6);
 }
 
+/**
+ * 析构函数
+ * 释放所有纹理图像资源
+ */
 SkyBoxSample::~SkyBoxSample()
 {
 	NativeImageUtil::FreeNativeImage(&m_RenderImage);
 
+	// 释放 6 张天空盒纹理图像
 	for(NativeImage nativeImage : m_pSkyBoxRenderImg)
 	{
 		NativeImageUtil::FreeNativeImage(&nativeImage);
@@ -42,6 +64,10 @@ SkyBoxSample::~SkyBoxSample()
 
 }
 
+/**
+ * 初始化函数
+ * 创建天空盒和立方体的着色器程序、VBO、VAO
+ */
 void SkyBoxSample::Init()
 {
 	if (m_ProgramObj)
@@ -49,64 +75,74 @@ void SkyBoxSample::Init()
 		return;
 	}
 
+	// ========== 天空盒顶点着色器 ==========
+	// 将顶点坐标直接作为纹理坐标（3D 方向向量）
 	char vSkyBoxShaderStr[] =
 			"#version 300 es\n"
 			"precision mediump float;\n"
-			"layout(location = 0) in vec3 a_position;\n"
-			"uniform mat4 u_MVPMatrix;\n"
-			"out vec3 v_texCoord;\n"
+			"layout(location = 0) in vec3 a_position;\n"   // 顶点位置
+			"uniform mat4 u_MVPMatrix;\n"                   // MVP 矩阵
+			"out vec3 v_texCoord;\n"                        // 3D 纹理坐标（方向向量）
 			"void main()\n"
 			"{\n"
 			"    gl_Position = u_MVPMatrix * vec4(a_position, 1.0);\n"
-			"    v_texCoord = a_position;\n"
+			"    v_texCoord = a_position;\n"  // 直接使用顶点位置作为采样方向
 			"}";
 
+	// ========== 天空盒片段着色器 ==========
+	// 使用 samplerCube 采样立方体贴图
 	char fSkyBoxShaderStr[] =
 			"#version 300 es\n"
 			"precision mediump float;\n"
-			"in vec3 v_texCoord;\n"
+			"in vec3 v_texCoord;\n"                         // 3D 纹理坐标
 			"layout(location = 0) out vec4 outColor;\n"
-			"uniform samplerCube s_SkyBox;\n"
+			"uniform samplerCube s_SkyBox;\n"               // 立方体贴图采样器
 			"void main()\n"
 			"{\n"
-			"    outColor = texture(s_SkyBox, v_texCoord);\n"
+			"    outColor = texture(s_SkyBox, v_texCoord);\n"  // 采样立方体贴图
 			"}";
 
+	// ========== 立方体顶点着色器 ==========
+	// 包含法线信息，用于计算反射/折射
 	char vCubeShaderStr[] =
 			"#version 300 es\n"
 			"precision mediump float;\n"
-			"layout(location = 0) in vec3 a_position;\n"
-			"layout(location = 1) in vec3 a_normal;\n"
-			"uniform mat4 u_MVPMatrix;\n"
-			"uniform mat4 u_ModelMatrix;\n"
-			"out vec3 v_texCoord;\n"
-			"out vec3 v_normal;\n"
+			"layout(location = 0) in vec3 a_position;\n"   // 顶点位置
+			"layout(location = 1) in vec3 a_normal;\n"     // 顶点法线
+			"uniform mat4 u_MVPMatrix;\n"                   // MVP 矩阵
+			"uniform mat4 u_ModelMatrix;\n"                 // 模型矩阵
+			"out vec3 v_texCoord;\n"                        // 世界空间位置
+			"out vec3 v_normal;\n"                          // 世界空间法线
 			"void main()\n"
 			"{\n"
 			"    gl_Position = u_MVPMatrix * vec4(a_position, 1.0);\n"
+            // 法线矩阵：模型矩阵的逆转置矩阵，用于正确变换法线
             "    v_normal = mat3(transpose(inverse(u_ModelMatrix))) * a_normal;\n"
-			"    v_texCoord = vec3(u_ModelMatrix * vec4(a_position, 1.0));\n"
+			"    v_texCoord = vec3(u_ModelMatrix * vec4(a_position, 1.0));\n"  // 世界空间位置
 			"}";
 
+	// ========== 立方体片段着色器 ==========
+	// 实现环境反射或折射效果
 	char fCubeShaderStr[] =
 			"#version 300 es\n"
 			"precision mediump float;\n"
-			"in vec3 v_texCoord;\n"
-			"in vec3 v_normal;\n"
+			"in vec3 v_texCoord;\n"                         // 片段世界坐标
+			"in vec3 v_normal;\n"                           // 片段法线
 			"layout(location = 0) out vec4 outColor;\n"
-			"uniform samplerCube s_SkyBox;\n"
-            "uniform vec3 u_cameraPos;"
+			"uniform samplerCube s_SkyBox;\n"               // 天空盒立方体贴图
+            "uniform vec3 u_cameraPos;"                     // 相机位置
 			"void main()\n"
 			"{\n"
-            "    float ratio = 1.00 / 1.52;"
-            "    vec3 I = normalize(v_texCoord - u_cameraPos);\n"
-			"    //反射  \n"
-			"    vec3 R = reflect(I, normalize(v_normal));\n"
-            "    //折射\n"
-            "    //vec3 R = refract(I, normalize(v_normal), ratio);\n"
-			"    outColor = texture(s_SkyBox, R);\n"
+            "    float ratio = 1.00 / 1.52;"                // 折射率（空气/玻璃）
+            "    vec3 I = normalize(v_texCoord - u_cameraPos);\n"  // 入射向量（相机到片段）
+			"    // 反射：计算反射向量\n"
+			"    vec3 R = reflect(I, normalize(v_normal));\n"  // 根据法线计算反射方向
+            "    // 折射：计算折射向量（注释掉）\n"
+            "    //vec3 R = refract(I, normalize(v_normal), ratio);\n"  // 根据法线和折射率计算折射方向
+			"    outColor = texture(s_SkyBox, R);\n"        // 采样立方体贴图
 			"}";
 
+	// 创建天空盒着色器程序
 	m_ProgramObj = GLUtils::CreateProgram(vSkyBoxShaderStr, fSkyBoxShaderStr, m_VertexShader, m_FragmentShader);
 	if (m_ProgramObj)
 	{
@@ -119,6 +155,7 @@ void SkyBoxSample::Init()
 		return;
 	}
 
+	// 创建立方体着色器程序
 	m_CubeProgramObj = GLUtils::CreateProgram(vCubeShaderStr, fCubeShaderStr, m_VertexShader, m_FragmentShader);
 	if (m_CubeProgramObj)
 	{
@@ -133,44 +170,46 @@ void SkyBoxSample::Init()
 		return;
 	}
 
+	// ========== 立方体顶点数据 ==========
+	// 用于渲染带反射效果的立方体（包含位置和法线）
 	GLfloat cubeVertices[] = {
 			 //position           //normal
-			-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+			-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  // 背面
 			 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 			 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 			 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 			-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 			-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 
-			-0.5f, -0.5f, 0.5f,   0.0f,  0.0f,  1.0f,
+			-0.5f, -0.5f, 0.5f,   0.0f,  0.0f,  1.0f,  // 正面
 			 0.5f, -0.5f, 0.5f,   0.0f,  0.0f,  1.0f,
 			 0.5f,  0.5f, 0.5f,   0.0f,  0.0f,  1.0f,
 			 0.5f,  0.5f, 0.5f,   0.0f,  0.0f,  1.0f,
 			-0.5f,  0.5f, 0.5f,   0.0f,  0.0f,  1.0f,
 			-0.5f, -0.5f, 0.5f,   0.0f,  0.0f,  1.0f,
 
-			-0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+			-0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  // 左面
 			-0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
 			-0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
 			-0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
 			-0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 			-0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-			 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+			 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  // 右面
 			 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
 			 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
 			 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
 			 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 			 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-			-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+			-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  // 底面
 			 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
 			 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
 			 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
 			-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
 			-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
 
-			-0.5f, 0.5f, -0.5f,   0.0f,  1.0f,  0.0f,
+			-0.5f, 0.5f, -0.5f,   0.0f,  1.0f,  0.0f,  // 顶面
 			 0.5f, 0.5f, -0.5f,   0.0f,  1.0f,  0.0f,
 			 0.5f, 0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
 			 0.5f, 0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
@@ -178,44 +217,46 @@ void SkyBoxSample::Init()
 			-0.5f, 0.5f, -0.5f,   0.0f,  1.0f,  0.0f,
 	};
 
+	// ========== 天空盒顶点数据 ==========
+	// 只包含位置信息，不需要法线
 	GLfloat skyboxVertices[] = {
 			// Positions
-			 -2.0f,  2.0f, -2.0f,
+			 -2.0f,  2.0f, -2.0f,  // 背面
 			 -2.0f, -2.0f, -2.0f,
 			2.0f, -2.0f, -2.0f,
 			2.0f, -2.0f, -2.0f,
 			2.0f,  2.0f, -2.0f,
 			-2.0f,  2.0f, -2.0f,
 
-			-2.0f, -2.0f,  2.0f,
+			-2.0f, -2.0f,  2.0f,  // 左面
 			-2.0f, -2.0f, -2.0f,
 			-2.0f,  2.0f, -2.0f,
 			-2.0f,  2.0f, -2.0f,
 			-2.0f,  2.0f,  2.0f,
 			-2.0f, -2.0f,  2.0f,
 
-			2.0f, -2.0f, -2.0f,
+			2.0f, -2.0f, -2.0f,  // 右面
 			2.0f, -2.0f,  2.0f,
 			2.0f,  2.0f,  2.0f,
 			2.0f,  2.0f,  2.0f,
 			2.0f,  2.0f, -2.0f,
 			2.0f, -2.0f, -2.0f,
 
-			-2.0f, -2.0f,  2.0f,
+			-2.0f, -2.0f,  2.0f,  // 正面
 			-2.0f,  2.0f,  2.0f,
 			2.0f,  2.0f,  2.0f,
 			2.0f,  2.0f,  2.0f,
 			2.0f, -2.0f,  2.0f,
 			-2.0f, -2.0f,  2.0f,
 
-			-2.0f,  2.0f, -2.0f,
+			-2.0f,  2.0f, -2.0f,  // 顶面
 			2.0f,  2.0f, -2.0f,
 			2.0f,  2.0f,  2.0f,
 			2.0f,  2.0f,  2.0f,
 			-2.0f,  2.0f,  2.0f,
 			-2.0f,  2.0f, -2.0f,
 
-			-2.0f, -2.0f, -2.0f,
+			-2.0f, -2.0f, -2.0f,  // 底面
 			-2.0f, -2.0f,  2.0f,
 			2.0f, -2.0f, -2.0f,
 			2.0f, -2.0f, -2.0f,
@@ -223,12 +264,11 @@ void SkyBoxSample::Init()
 			2.0f, -2.0f,  2.0f
 	};
 
-	// Generate SkyBox VBO Ids and load the VBOs with data
+	// ========== 创建天空盒 VBO 和 VAO ==========
 	glGenBuffers(1, &m_SkyBoxVboId);
 	glBindBuffer(GL_ARRAY_BUFFER, m_SkyBoxVboId);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), skyboxVertices, GL_STATIC_DRAW);
 
-	// Generate SkyBox VAO Id
 	glGenVertexArrays(1, &m_SkyBoxVaoId);
 	glBindVertexArray(m_SkyBoxVaoId);
 	glBindBuffer(GL_ARRAY_BUFFER, m_SkyBoxVboId);
@@ -237,17 +277,18 @@ void SkyBoxSample::Init()
 	glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
 	glBindVertexArray(GL_NONE);
 
-	// Generate Cube VBO Ids and load the VBOs with data
+	// ========== 创建立方体 VBO 和 VAO ==========
 	glGenBuffers(1, &m_CubeVboId);
 	glBindBuffer(GL_ARRAY_BUFFER, m_CubeVboId);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
 
-	// Generate Cube VAO Id
 	glGenVertexArrays(1, &m_CubeVaoId);
 	glBindVertexArray(m_CubeVaoId);
 	glBindBuffer(GL_ARRAY_BUFFER, m_CubeVboId);
+	// 位置属性
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (const void *) 0);
+	// 法线属性
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
 	glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
@@ -255,6 +296,9 @@ void SkyBoxSample::Init()
 
 }
 
+/**
+ * 加载单张图像（未使用）
+ */
 void SkyBoxSample::LoadImage(NativeImage *pImage)
 {
 	LOGCATE("SkyBoxSample::LoadImage pImage = %p", pImage->ppPlane[0]);
@@ -268,11 +312,17 @@ void SkyBoxSample::LoadImage(NativeImage *pImage)
 
 }
 
+/**
+ * 加载立方体贴图的 6 张纹理图像
+ * @param index 纹理索引（0-5）：右(+X)、左(-X)、上(+Y)、下(-Y)、后(+Z)、前(-Z)
+ * @param pImage 图像数据指针
+ */
 void SkyBoxSample::LoadMultiImageWithIndex(int index, NativeImage *pImage)
 {
 	LOGCATE("SkyBoxSample::LoadMultiImageWithIndex pImage = %p, index=%d", pImage->ppPlane[0], index);
 	if (pImage)
 	{
+		// 如果该索引已有图像，先释放
 		if(m_pSkyBoxRenderImg[index].ppPlane[0])
 		{
 			NativeImageUtil::FreeNativeImage(&m_pSkyBoxRenderImg[index]);
@@ -285,62 +335,75 @@ void SkyBoxSample::LoadMultiImageWithIndex(int index, NativeImage *pImage)
 	}
 }
 
+/**
+ * 绘制函数
+ * 先渲染天空盒，再渲染带反射效果的立方体
+ */
 void SkyBoxSample::Draw(int screenW, int screenH)
 {
 	LOGCATE("SkyBoxSample::Draw()");
 
 	if (m_ProgramObj == GL_NONE) return;
-	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_DEPTH_TEST);  // 启用深度测试
 
+	// 更新天空盒的 MVP 矩阵（scale=1.0 表示原始大小）
 	UpdateMVPMatrix(m_MVPMatrix, m_AngleX, m_AngleY, 1.0, (float) screenW / screenH);
 
+	// ========== 创建立方体贴图纹理 ==========
 	if (!m_TextureId)
 	{
-		//create RGBA texture
 		glGenTextures(1, &m_TextureId);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_TextureId);
 
+		// 加载 6 张纹理到立方体贴图的 6 个面
+		// 顺序：+X(右), -X(左), +Y(上), -Y(下), +Z(后), -Z(前)
 		for (int i = 0; i < sizeof(m_pSkyBoxRenderImg) / sizeof(NativeImage); ++i)
 		{
 			glTexImage2D(
-					GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,
+					GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,  // 6 个面的目标枚举值
 					GL_RGBA, m_pSkyBoxRenderImg[i].width, m_pSkyBoxRenderImg[i].height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_pSkyBoxRenderImg[i].ppPlane[0]
 			);
 		}
+		// 设置立方体贴图的纹理参数
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  // S 方向边缘夹取
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);  // T 方向边缘夹取
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);  // R 方向边缘夹取（立方体贴图特有）
 		glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 
 	}
 
-	// draw SkyBox
+	// ========== 绘制天空盒 ==========
 	glUseProgram(m_ProgramObj);
 	glBindVertexArray(m_SkyBoxVaoId);
 	glUniformMatrix4fv(m_MVPMatLoc, 1, GL_FALSE, &m_MVPMatrix[0][0]);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, m_TextureId);
 	glUniform1i(m_SamplerLoc, 0);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
+	glDrawArrays(GL_TRIANGLES, 0, 36);  // 绘制 36 个顶点（6 个面 × 2 个三角形 × 3 个顶点）
 	GO_CHECK_GL_ERROR();
 
+	// 更新立方体的 MVP 矩阵（scale=0.4 表示缩小立方体）
 	UpdateMVPMatrix(m_MVPMatrix, m_AngleX, m_AngleY, 0.4f, (float) screenW / screenH);
 
-	// draw Cube
+	// ========== 绘制带反射效果的立方体 ==========
 	glUseProgram(m_CubeProgramObj);
 	glBindVertexArray(m_CubeVaoId);
 	glUniformMatrix4fv(m_CubeMVPMatLoc, 1, GL_FALSE, &m_MVPMatrix[0][0]);
 	glUniformMatrix4fv(m_CubeModelMatLoc, 1, GL_FALSE, &m_ModelMatrix[0][0]);
-	glUniform3f(m_ViewPosLoc,  0.0f, 0.0f, 1.8f);
+	glUniform3f(m_ViewPosLoc,  0.0f, 0.0f, 1.8f);  // 设置相机位置
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, m_TextureId);
 	glUniform1i(m_CubeSamplerLoc, 0);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
+	glDrawArrays(GL_TRIANGLES, 0, 36);  // 绘制立方体
 	GO_CHECK_GL_ERROR();
 }
 
+/**
+ * 销毁资源
+ * 释放天空盒和立方体的 VAO、VBO、纹理
+ */
 void SkyBoxSample::Destroy()
 {
 	if (m_ProgramObj)
