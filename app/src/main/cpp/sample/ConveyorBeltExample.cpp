@@ -19,6 +19,7 @@ ConveyorBeltExample::ConveyorBeltExample()
         m_TextureIds[i] = GL_NONE;
     }
 	m_VaoId = GL_NONE;
+	m_VboIds[0] = m_VboIds[1] = GL_NONE;  // 原来没有初始化，Init 失败时 Destroy 会拿垃圾值去删除
 
 	m_AngleX = 0;
 	m_AngleY = 0;

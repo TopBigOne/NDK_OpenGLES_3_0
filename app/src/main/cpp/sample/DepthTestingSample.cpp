@@ -10,7 +10,8 @@
 #include "DepthTestingSample.h"
 #include "../util/GLUtils.h"
 
-glm::vec3 transPos[] = {
+// static：避免与其它编译单元的同名全局数组发生 ODR 冲突
+static glm::vec3 transPos[] = {
 		glm::vec3( 0.0f,  0.0f,  0.0f),
 		glm::vec3( 2.0f,  2.0f, -1.0f) * 1.6f,
 		glm::vec3(-1.5f, -2.2f, -1.5f) * 1.6f,
@@ -33,6 +34,7 @@ DepthTestingSample::DepthTestingSample()
 	m_MVPMatLoc = GL_NONE;
 	m_TextureId = GL_NONE;
 	m_VaoId = GL_NONE;
+	m_VboIds[0] = GL_NONE;  // 原来没有初始化，Init 失败时 Destroy 会拿垃圾值去删除
 
 	m_AngleX = 0;
 	m_AngleY = 0;

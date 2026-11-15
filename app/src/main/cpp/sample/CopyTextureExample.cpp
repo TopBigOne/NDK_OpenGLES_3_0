@@ -270,6 +270,9 @@ bool CopyTextureExample::CreateFrameBufferObj()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImage.width, m_RenderImage.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER)!= GL_FRAMEBUFFER_COMPLETE) {
 		LOGCATE("CopyTextureExample::CreateFrameBufferObj glCheckFramebufferStatus status != GL_FRAMEBUFFER_COMPLETE");
+		// 失败时也要恢复绑定，避免把不完整的 FBO 留作当前绘制目标
+		glBindTexture(GL_TEXTURE_2D, GL_NONE);
+		glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
 		return false;
 	}
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);

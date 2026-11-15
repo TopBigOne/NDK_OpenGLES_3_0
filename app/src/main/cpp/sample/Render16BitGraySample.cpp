@@ -20,7 +20,7 @@ void Render16BitGraySample::LoadImage(NativeImage *pImage)
 		m_RenderImage.format = IMAGE_FORMAT_GRAY10;
 		NativeImageUtil::AllocNativeImage(&m_RenderImage);
 	}
-	NativeImageUtil::LoadNativeImage(&m_RenderImage, IMAGE_PATH);
+	m_bImageLoaded = NativeImageUtil::LoadNativeImage(&m_RenderImage, IMAGE_PATH);
 	//YUVP010Example::YUVP010Test();
 }
 
@@ -67,6 +67,11 @@ bool Render16BitGraySample::Init()
 	m_yTextureId = textureIds[0];
 
 	LoadImage(nullptr);
+	if (!m_bImageLoaded)
+	{
+		LOGCATE("Render16BitGraySample::Init load image fail");
+		return false;
+	}
 
 	//upload Y plane data
 	glBindTexture(GL_TEXTURE_2D, m_yTextureId);

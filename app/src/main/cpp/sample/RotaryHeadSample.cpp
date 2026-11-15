@@ -56,6 +56,12 @@ RotaryHeadSample::~RotaryHeadSample()
 
 bool RotaryHeadSample::Init()
 {
+	// CalculateMesh 用图像宽高做归一化，没有图像时会除以 0 得到 inf/NaN 顶点
+	if (m_RenderImage.ppPlane[0] == nullptr || m_RenderImage.width <= 0 || m_RenderImage.height <= 0)
+	{
+		LOGCATE("RotaryHeadSample::Init no image loaded");
+		return false;
+	}
 
 	char vShaderStr[] =
             "#version 300 es\n"

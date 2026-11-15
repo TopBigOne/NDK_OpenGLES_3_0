@@ -37,7 +37,8 @@ PortraitModeSample::~PortraitModeSample()
 void PortraitModeSample::LoadMultiImageWithIndex(int index, NativeImage *pImage)
 {
 	GLSampleBase::LoadMultiImageWithIndex(index, pImage);
-	if (pImage)
+	// index 来自 Java 层，只接受 0（原图）和 1（人像遮罩），否则会写越界
+	if (pImage && index >= 0 && index < 2)
 	{
 		LOGCATD("PortraitModeSample::LoadImage index=%d, pImage = %p", index, pImage->ppPlane[0]);
 		NativeImageUtil::CopyNativeImage(pImage, &m_RenderImages[index]);
@@ -250,6 +251,9 @@ bool PortraitModeSample::CreateFrameBufferObj()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImages[0].width, m_RenderImages[0].height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER)!= GL_FRAMEBUFFER_COMPLETE) {
 		LOGCATE("PortraitModeSample::CreateFrameBufferObj glCheckFramebufferStatus status != GL_FRAMEBUFFER_COMPLETE");
+		// 失败路径同样恢复默认绑定，避免把未完成的 FBO 留作当前绘制目标
+		glBindTexture(GL_TEXTURE_2D, GL_NONE);
+		glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
 		return false;
 	}
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
@@ -278,7 +282,8 @@ int PortraitModeSample::RenderToFrameBuffer(GLuint program, GLuint srcTexId, GLu
 	GLUtils::setInt(program, "sTexture", 0);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, m_PortraitTexId);
-	GLUtils::setInt(m_BlendProgramObj, "sPortraitTexture", 1);
+	// 当前绑定的是 program，原来查询的是 m_BlendProgramObj 的 uniform 位置，位置不属于当前 program
+	GLUtils::setInt(program, "sPortraitTexture", 1);
 	GLUtils::setVec2(program, "inputSize", m_RenderImages[0].width, m_RenderImages[0].height);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const void *)0);
 	glBindVertexArray(GL_NONE);

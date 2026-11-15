@@ -44,6 +44,8 @@ private:
 
 	GLuint m_FboId, m_FboId2;
 	GLuint m_RboId;
+	int m_FboWidth, m_FboHeight;  // 当前 FBO 附件的尺寸，视图尺寸变化时需要重建
+	bool m_FboReady;              // 两个 FBO 是否都完整
 
 	int m_AngleX;
 	int m_AngleY;

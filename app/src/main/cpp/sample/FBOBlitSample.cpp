@@ -35,6 +35,10 @@ FBOBlitSample::FBOBlitSample()
 	// OpenGL对象ID初始化
 	m_TextureId = GL_NONE;    // 输入图像纹理ID
 	m_VaoId = GL_NONE;        // 顶点数组对象ID
+	m_FBO = GL_NONE;          // 离屏 FBO
+	// 原来没有初始化，Destroy 时可能拿垃圾值调用删除
+	for (int i = 0; i < ATTACHMENT_NUM; ++i) m_AttachTexIds[i] = GL_NONE;
+	for (int i = 0; i < 3; ++i) m_VboIds[i] = GL_NONE;
 
 	// 变换参数初始化
 	m_AngleX = 0;             // 绕X轴旋转角度
@@ -334,8 +338,12 @@ bool FBOBlitSample::InitFBO() {
 	// 检查FBO完整性
 	if (GL_FRAMEBUFFER_COMPLETE != glCheckFramebufferStatus(GL_FRAMEBUFFER))
 	{
+		// 失败时也要恢复原来的绑定，否则后续绘制会落在不完整的 FBO 上
+		glBindTexture(GL_TEXTURE_2D, GL_NONE);
+		glBindFramebuffer(GL_FRAMEBUFFER, defaultFrameBuffer);
 		return false;
 	}
+	glBindTexture(GL_TEXTURE_2D, GL_NONE);
 	// 恢复默认帧缓冲绑定
 	glBindFramebuffer(GL_FRAMEBUFFER, defaultFrameBuffer);
     return true;
@@ -345,6 +353,9 @@ bool FBOBlitSample::InitFBO() {
 // glBlitFramebuffer 是一种高效的位块传输（Blit）操作，可以快速复制帧缓冲区内容
 // 相比使用着色器渲染，Blit操作通常更快，因为它可以利用GPU的专门硬件加速
 void FBOBlitSample::BlitTextures() {
+	// 记住原来的读帧缓冲，Blit 完成后恢复，避免读绑定一直停留在离屏 FBO 上
+	GLint prevReadFrameBuffer = GL_NONE;
+	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &prevReadFrameBuffer);
 	// 绑定FBO为读取帧缓冲
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FBO);
 
@@ -376,4 +387,6 @@ void FBOBlitSample::BlitTextures() {
 	glBlitFramebuffer(0, 0, m_RenderImage.width, m_RenderImage.height,
 						m_SurfaceWidth/2, m_SurfaceHeight/2, m_SurfaceWidth, m_SurfaceHeight,
 						GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, prevReadFrameBuffer);
 }

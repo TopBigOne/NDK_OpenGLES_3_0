@@ -22,6 +22,7 @@ public:
 
 		m_ySamplerLoc = GL_NONE;
 
+		m_bImageLoaded = false;
 	}
 
 	virtual ~Render16BitGraySample()
@@ -43,6 +44,9 @@ private:
 	GLint m_ySamplerLoc;
 
 	NativeImage m_RenderImage;
+
+	// 最近一次从文件读取图像是否成功；失败时 Init 返回 false，避免上传未初始化的内存
+	bool m_bImageLoaded;
 
 };
 

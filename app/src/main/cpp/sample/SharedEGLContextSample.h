@@ -12,6 +12,9 @@
 #include "GLSampleBase.h"
 #include "../util/ImageDef.h"
 #include <thread>
+#include <mutex>
+#include <chrono>
+#include <condition_variable>
 #include <GLRenderLooper.h>
 
 using namespace std;
@@ -47,6 +50,8 @@ private:
 	// Destroy 只在为 true 时才通知工作线程销毁，避免 Init 失败后的 Destroy 去创建一个
 	// 从未初始化过 m_GLEnv 的 looper 并让它处理 MSG_SurfaceDestroyed。
 	bool m_LooperStarted;
+	// 工作线程完成的帧计数（受 m_Mutex 保护），作为 Draw 等待的谓词，防止虚假唤醒
+	uint64_t m_AsyncFrameCount;
 };
 
 

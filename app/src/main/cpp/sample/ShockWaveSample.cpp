@@ -174,7 +174,8 @@ void ShockWaveSample::Draw(int screenW, int screenH)
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
-	GLUtils::setFloat(m_ProgramObj, "s_TextureMap", 0);
+	// 采样器是整型 uniform，用 glUniform1f 设置会产生 GL_INVALID_OPERATION
+	GLUtils::setInt(m_ProgramObj, "s_TextureMap", 0);
 
 	//float time = static_cast<float>(fmod(GetSysCurrentTime(), 2000) / 2000);
     float time = static_cast<float>(fmod(m_FrameIndex, 150) / 120);
@@ -247,6 +248,8 @@ void ShockWaveSample::UpdateTransformMatrix(float rotateX, float rotateY, float 
 
 void ShockWaveSample::SetTouchLocation(float x, float y)
 {
+    // surface 尺寸在第一次 Draw 时才写入，此前为 0，除法会得到 inf/NaN 传给着色器
+    if (m_SurfaceWidth <= 0 || m_SurfaceHeight <= 0) return;
     m_touchXY = vec2(x / m_SurfaceWidth, y / m_SurfaceHeight);
     m_FrameIndex = 0;
 }

@@ -40,6 +40,7 @@ private:
     GLuint m_FBO;
 	GLint m_SamplerLoc;
 	GLint m_MVPMatLoc;
+	GLint m_ScreenMVPMatLoc;  // 第二遍（m_ProgramObj）的 u_MVPMatrix 位置
 	GLuint m_VaoId;
 	GLuint m_VboIds[3];
 	NativeImage m_RenderImage;

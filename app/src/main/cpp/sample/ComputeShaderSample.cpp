@@ -65,11 +65,20 @@ void ComputeShaderSample::Draw(int screenW, int screenH)
 	// 读取并打印处理后的数据
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_DataBuffer);
 	auto* mappedData = (float*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, m_DataSize, GL_MAP_READ_BIT);
-	LOGCATV("ComputeShaderSample::Draw() Data after compute shader:\n");
-	for (int i = 0; i < m_DataSize/ sizeof(float); ++i) {
-		LOGCATV("ComputeShaderSample::Draw() => %f", mappedData[i]);
+	// 映射可能失败（返回 nullptr），失败时既不能读也不能 unmap
+	if (mappedData != nullptr)
+	{
+		LOGCATV("ComputeShaderSample::Draw() Data after compute shader:\n");
+		for (int i = 0; i < m_DataSize / (int) sizeof(float); ++i) {
+			LOGCATV("ComputeShaderSample::Draw() => %f", mappedData[i]);
+		}
+		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 	}
-	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+	else
+	{
+		LOGCATE("ComputeShaderSample::Draw glMapBufferRange fail");
+	}
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
 void ComputeShaderSample::Destroy()

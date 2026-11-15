@@ -36,6 +36,9 @@ BigHeadSample::BigHeadSample()
 	m_MVPMatLoc = GL_NONE;
 
 	m_TextureId = GL_NONE;
+	m_VaoId = GL_NONE;
+	m_VboIds[0] = GL_NONE;
+	m_VboIds[1] = GL_NONE;
 
 	m_AngleX = 0;
 	m_AngleY = 0;
@@ -54,6 +57,12 @@ BigHeadSample::~BigHeadSample()
 
 bool BigHeadSample::Init()
 {
+	// CalculateMesh 用图像宽高做除数来归一化关键点，图像还没加载时会除 0 得到 inf/NaN 网格
+	if (m_RenderImage.ppPlane[0] == nullptr || m_RenderImage.width <= 0 || m_RenderImage.height <= 0)
+	{
+		LOGCATE("BigHeadSample::Init render image is empty");
+		return false;
+	}
 
 	char vShaderStr[] =
             "#version 300 es\n"

@@ -175,13 +175,21 @@ void TransformFeedbackSample::Draw(int screenW, int screenH)
 	glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, m_TransFeedbackBufId);
 	void* rawData = glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0,  (3 + 2) * 6 * sizeof(GLfloat), GL_MAP_READ_BIT);
 
-	float *p = (float*)rawData;
-	for(int i= 0; i< 6; i++)
+	// 映射可能失败（返回 nullptr），此时不能读取，也不应调用 glUnmapBuffer
+	if (rawData != nullptr)
 	{
-		LOGCATV("TransformFeedbackSample::Draw() read feedback buffer outPos[%d] = [%f, %f, %f], outTex[%d] = [%f, %f]", i, p[i * 5], p[i * 5 + 1], p[i * 5 + 2], i, p[i * 5 + 3], p[i * 5 + 4]);
-	}
+		float *p = (float*)rawData;
+		for(int i= 0; i< 6; i++)
+		{
+			LOGCATV("TransformFeedbackSample::Draw() read feedback buffer outPos[%d] = [%f, %f, %f], outTex[%d] = [%f, %f]", i, p[i * 5], p[i * 5 + 1], p[i * 5 + 2], i, p[i * 5 + 3], p[i * 5 + 4]);
+		}
 
-	glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER);
+		glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER);
+	}
+	else
+	{
+		LOGCATE("TransformFeedbackSample::Draw glMapBufferRange failed");
+	}
 	glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, 0);
 
 }

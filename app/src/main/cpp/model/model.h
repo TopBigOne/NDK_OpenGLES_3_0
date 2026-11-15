@@ -12,6 +12,7 @@
 #include <sstream>
 #include <iostream>
 #include <map>
+#include <cfloat>
 #include <vector>
 #include <opencv2/opencv.hpp>
 #include "mesh.h"
@@ -35,6 +36,10 @@ public:
     /*  Functions   */
     // constructor, expects a filepath to a 3D model.
     Model(string const &path, bool gamma = false) :
+    // glm::vec3 默认构造不初始化分量，原来 maxXyz/minXyz 是随机值，包围盒和相机距离都会算错；
+    // 用 ±FLT_MAX 作为初值，第一个顶点就会把它们收紧到真实范围
+    maxXyz(-FLT_MAX, -FLT_MAX, -FLT_MAX),
+    minXyz(FLT_MAX, FLT_MAX, FLT_MAX),
     gammaCorrection(gamma),
     hasTexture(false)
     {
@@ -158,12 +163,18 @@ private:
             vertex.Position = vector;
             updateMaxMinXyz(vector);
             // normals
-            vector.x = mesh->mNormals[i].x;
-            vector.y = mesh->mNormals[i].y;
-            vector.z = mesh->mNormals[i].z;
-            vertex.Normal = vector;
+            // 模型可能不带法线/切线（Assimp 对应数组为 nullptr），直接解引用会崩溃，缺失时填 0
+            if (mesh->HasNormals())
+            {
+                vector.x = mesh->mNormals[i].x;
+                vector.y = mesh->mNormals[i].y;
+                vector.z = mesh->mNormals[i].z;
+                vertex.Normal = vector;
+            }
+            else
+                vertex.Normal = glm::vec3(0.0f);
             // texture coordinates
-            if(mesh->mTextureCoords[0]) // does the mesh contain texture coordinates?
+            if(mesh->HasTextureCoords(0)) // does the mesh contain texture coordinates?
             {
                 glm::vec2 vec;
                 // a vertex can contain up to 8 different texture coordinates. We thus make the assumption that we won't 
@@ -175,16 +186,23 @@ private:
             else
                 vertex.TexCoords = glm::vec2(0.0f, 0.0f);
 
-            // tangent
-            vector.x = mesh->mTangents[i].x;
-            vector.y = mesh->mTangents[i].y;
-            vector.z = mesh->mTangents[i].z;
-            vertex.Tangent = vector;
-            // bitangent
-            vector.x = mesh->mBitangents[i].x;
-            vector.y = mesh->mBitangents[i].y;
-            vector.z = mesh->mBitangents[i].z;
-            vertex.Bitangent = vector;
+            // tangent / bitangent：没有法线或纹理坐标时 aiProcess_CalcTangentSpace 不会生成，数组为 nullptr
+            if (mesh->HasTangentsAndBitangents())
+            {
+                vector.x = mesh->mTangents[i].x;
+                vector.y = mesh->mTangents[i].y;
+                vector.z = mesh->mTangents[i].z;
+                vertex.Tangent = vector;
+                vector.x = mesh->mBitangents[i].x;
+                vector.y = mesh->mBitangents[i].y;
+                vector.z = mesh->mBitangents[i].z;
+                vertex.Bitangent = vector;
+            }
+            else
+            {
+                vertex.Tangent = glm::vec3(0.0f);
+                vertex.Bitangent = glm::vec3(0.0f);
+            }
             vertices.push_back(vertex);
         }
         // now wak through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.
@@ -263,9 +281,6 @@ private:
         unsigned int textureID;
         glGenTextures(1, &textureID);
 
-        int width, height, nrComponents;
-        unsigned char *data = nullptr;
-
         // load the texture using OpenCV
         LOGCATD("TextureFromFile Loading texture %s", filename.c_str());
         cv::Mat textureImage = cv::imread(filename);
@@ -279,17 +294,23 @@ private:
             //cv::flip(textureImage, textureImage, 0);
 
             glBindTexture(GL_TEXTURE_2D, textureID);
+            // RGB 每行 cols*3 字节，通常不是 4 的倍数，默认 4 字节对齐会导致行错位；上传后恢复默认值
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, textureImage.cols,
                          textureImage.rows, 0, GL_RGB, GL_UNSIGNED_BYTE,
                          textureImage.data);
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
             glGenerateMipmap(GL_TEXTURE_2D);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             GO_CHECK_GL_ERROR();
+            glBindTexture(GL_TEXTURE_2D, GL_NONE);
         } else {
             LOGCATE("TextureFromFile Texture failed to load at path: %s", path);
+            // 加载失败时删除已生成的空纹理并返回 0，避免泄漏一个没有存储的纹理对象
+            GLUtils::DeleteTexture(textureID);
         }
 
         return textureID;

@@ -26,6 +26,8 @@ CloudSample::CloudSample()
 
 	m_ScaleX = 1.0f;
 	m_ScaleY = 1.0f;
+
+	m_FrameIndex = 0;
 }
 
 CloudSample::~CloudSample()
@@ -264,11 +266,10 @@ void CloudSample::Draw(int screenW, int screenH)
 
 	glBindVertexArray(m_VaoId);
 
-	static int sFrameIndex = 0;
-	sFrameIndex ++;
+	m_FrameIndex ++;
 
 	glUniformMatrix4fv(m_MVPMatLoc, 1, GL_FALSE, &m_MVPMatrix[0][0]);
-	float time = sFrameIndex * 0.04f;
+	float time = m_FrameIndex * 0.04f;
     LOGCATV("CloudSample::Draw() time=%f",time);
 	glUniform1f(m_TimeLoc, time);
     glUniform2f(m_SizeLoc, screenW, screenH);

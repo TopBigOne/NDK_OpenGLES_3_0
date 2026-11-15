@@ -795,7 +795,8 @@ void FBOLegLengthenSample::Draw(int screenW, int screenH)
 	glUniform1i(m_FboSamplerLoc, 0);
 	glUniformMatrix4fv(m_FboMVPMatLoc, 1, GL_FALSE, &m_FboMVPMatrix[0][0]);
 	GO_CHECK_GL_ERROR();
-	GLsizei indicesNum;
+	// 默认值 0：未知模式时不绘制，而不是用未初始化的数量调用 glDrawElements
+	GLsizei indicesNum = 0;
 	switch (m_StretchMode)
 	{
 		case VERTICAL_STRETCH_8_POINTS:
@@ -815,7 +816,10 @@ void FBOLegLengthenSample::Draw(int screenW, int screenH)
 		default:
 			break;
 	}
-	glDrawElements(GL_TRIANGLES, indicesNum, GL_UNSIGNED_SHORT, (const void *)0);
+	if (indicesNum > 0)
+	{
+		glDrawElements(GL_TRIANGLES, indicesNum, GL_UNSIGNED_SHORT, (const void *)0);
+	}
 	GO_CHECK_GL_ERROR();
 	glBindVertexArray(0);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -884,6 +888,9 @@ bool FBOLegLengthenSample::CreateFrameBufferObj()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImage.width, m_RenderImage.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER)!= GL_FRAMEBUFFER_COMPLETE) {
 		LOGCATE("FBOLegLengthenSample::CreateFrameBufferObj glCheckFramebufferStatus status != GL_FRAMEBUFFER_COMPLETE");
+		// 失败路径也要恢复绑定，避免 FBO/纹理绑定泄漏到后续绘制
+		glBindTexture(GL_TEXTURE_2D, GL_NONE);
+		glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
 		return false;
 	}
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);

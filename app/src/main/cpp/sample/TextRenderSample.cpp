@@ -62,11 +62,13 @@ TextRenderSample::~TextRenderSample()
  */
 bool TextRenderSample::Init()
 {
+	// 字体文件缺失（例如还没从 assets 拷贝出来）时没有可渲染的字形，直接判定初始化失败；
+	// 已经创建的字形纹理由基类随后调用的 Destroy 统一释放
 	// 加载 ASCII 字符字形（英文字符）
-	LoadFacesByASCII();
+	if (!LoadFacesByASCII()) return false;
 
 	// 加载 Unicode 字符字形（中文字符）
-	LoadFacesByUnicode(BYTE_FLOW, sizeof(BYTE_FLOW)/sizeof(BYTE_FLOW[0]) - 1);
+	if (!LoadFacesByUnicode(BYTE_FLOW, sizeof(BYTE_FLOW)/sizeof(BYTE_FLOW[0]) - 1)) return false;
 
 	// 创建 RGBA 纹理用于字形渲染
 	glGenTextures(1, &m_TextureId);
@@ -185,6 +187,9 @@ void TextRenderSample::Draw(int screenW, int screenH)
 
 	// 更新 MVP 矩阵
 	UpdateMVPMatrix(m_MVPMatrix, m_AngleX, m_AngleY, viewport.x / viewport.y);
+	// glUniform* 作用于当前绑定的 program：必须先 glUseProgram，
+	// 否则第一帧（尚未绑定任何 program）会报 GL_INVALID_OPERATION，MVP 也没有设置上
+	glUseProgram(m_ProgramObj);
 	glUniformMatrix4fv(m_MVPMatLoc, 1, GL_FALSE, &m_MVPMatrix[0][0]);
 
 	// 渲染英文文本
@@ -231,8 +236,11 @@ void TextRenderSample::RenderText(std::string text, GLfloat x, GLfloat y, GLfloa
 	std::string::const_iterator c;
 	for (c = text.begin(); c != text.end(); c++)
 	{
-		// 获取字符对应的字形信息
-		Character ch = m_Characters[*c];
+		// 获取字符对应的字形信息。不能用 operator[]：缺失的字符（字形加载失败）会被插入一个
+		// 未初始化的 Character，随后用垃圾纹理 ID 和尺寸去绘制
+		auto it = m_Characters.find(*c);
+		if (it == m_Characters.end()) continue;
+		Character ch = it->second;
 
 		// 计算字符的渲染位置
 		// bearing.x: 字形左侧到基线的水平距离
@@ -295,17 +303,24 @@ void TextRenderSample::RenderText(std::string text, GLfloat x, GLfloat y, GLfloa
  * 加载 ASCII 字符集的字形
  * 使用 FreeType 库加载前 128 个 ASCII 字符
  */
-void TextRenderSample::LoadFacesByASCII() {
-	// 初始化 FreeType 库
+bool TextRenderSample::LoadFacesByASCII() {
+	// 初始化 FreeType 库。失败时 ft/face 处于未定义状态，原来只打日志继续使用会崩溃，必须提前返回
 	FT_Library ft;
 	if (FT_Init_FreeType(&ft))
+	{
 		LOGCATE("TextRenderSample::LoadFacesByASCII FREETYPE: Could not init FreeType Library");
+		return false;
+	}
 
 	// 加载字体文件
 	FT_Face face;
     std::string path(DEFAULT_OGL_ASSETS_DIR);
 	if (FT_New_Face(ft, (path + "/fonts/Antonio-Regular.ttf").c_str(), 0, &face))
+	{
 		LOGCATE("TextRenderSample::LoadFacesByASCII FREETYPE: Failed to load font");
+		FT_Done_FreeType(ft);
+		return false;
+	}
 
 	// 设置字形大小（宽度设为 0 表示根据高度自动计算）
 	FT_Set_Pixel_Sizes(face, 0, 96);
@@ -361,6 +376,7 @@ void TextRenderSample::LoadFacesByASCII() {
 	// 清理 FreeType 资源
 	FT_Done_Face(face);
 	FT_Done_FreeType(ft);
+	return true;
 }
 
 /**
@@ -368,17 +384,24 @@ void TextRenderSample::LoadFacesByASCII() {
  * @param text Unicode 字符数组
  * @param size 字符数量
  */
-void TextRenderSample::LoadFacesByUnicode(const wchar_t* text, int size) {
-	// 初始化 FreeType 库
+bool TextRenderSample::LoadFacesByUnicode(const wchar_t* text, int size) {
+	// 初始化 FreeType 库（失败处理同 LoadFacesByASCII）
 	FT_Library ft;
 	if (FT_Init_FreeType(&ft))
+	{
 		LOGCATE("TextRenderSample::LoadFacesByUnicode FREETYPE: Could not init FreeType Library");
+		return false;
+	}
 
 	// 加载支持中文的字体文件（微软雅黑）
 	FT_Face face;
     std::string path(DEFAULT_OGL_ASSETS_DIR);
     if (FT_New_Face(ft, (path + "/fonts/msyh.ttc").c_str(), 0, &face))
+	{
 		LOGCATE("TextRenderSample::LoadFacesByUnicode FREETYPE: Failed to load font");
+		FT_Done_FreeType(ft);
+		return false;
+	}
 
 	// 设置字形大小
 	FT_Set_Pixel_Sizes(face, 96, 96);
@@ -389,6 +412,10 @@ void TextRenderSample::LoadFacesByUnicode(const wchar_t* text, int size) {
 
 	// 遍历所有需要加载的 Unicode 字符
 	for (int i = 0; i < size; ++i) {
+		// 文本中有重复字符（如“流”）：std::map::insert 不会覆盖已有键，若照常创建纹理，
+		// 新纹理不会被记录，Destroy 也就删不到它，造成 GL 纹理泄漏
+		if (m_Characters.find(text[i]) != m_Characters.end()) continue;
+
 		// 根据 Unicode 值获取字形索引并加载
 		if (FT_Load_Glyph(face, FT_Get_Char_Index(face, text[i]), FT_LOAD_DEFAULT))
 		{
@@ -398,10 +425,19 @@ void TextRenderSample::LoadFacesByUnicode(const wchar_t* text, int size) {
 
 		// 获取字形数据
 		FT_Glyph glyph;
-		FT_Get_Glyph(face->glyph, &glyph );
+		if (FT_Get_Glyph(face->glyph, &glyph))
+		{
+			LOGCATE("TextRenderSample::LoadFacesByUnicode FREETYTPE: Failed to get Glyph");
+			continue;
+		}
 
-		// 将字形转换为位图
-		FT_Glyph_To_Bitmap(&glyph, ft_render_mode_normal, 0, 1 );
+		// 将字形转换为位图（destroy=1：转换成功时原字形由 FreeType 释放，glyph 指向新的位图字形）
+		if (FT_Glyph_To_Bitmap(&glyph, ft_render_mode_normal, 0, 1))
+		{
+			LOGCATE("TextRenderSample::LoadFacesByUnicode FREETYTPE: Failed to render Glyph");
+			FT_Done_Glyph(glyph);
+			continue;
+		}
 		FT_BitmapGlyph bitmap_glyph = (FT_BitmapGlyph)glyph;
 
 		// 获取位图数据的引用
@@ -441,12 +477,16 @@ void TextRenderSample::LoadFacesByUnicode(const wchar_t* text, int size) {
 				static_cast<GLuint>((glyph->advance.x / MAX_SHORT_VALUE) << 6)  // 转换推进值单位
 		};
 		m_Characters.insert(std::pair<GLint, Character>(text[i], character));
+
+		// FT_Get_Glyph 得到的字形归调用者所有，原来从未释放，每次 Init 每个字符都会泄漏一份
+		FT_Done_Glyph(glyph);
 	}
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	// 清理 FreeType 资源
 	FT_Done_Face(face);
 	FT_Done_FreeType(ft);
+	return true;
 }
 
 /**
@@ -538,8 +578,10 @@ void TextRenderSample::RenderText(const wchar_t *text, int textLen, GLfloat x, G
 	// 遍历所有 Unicode 字符
 	for (int i = 0; i < textLen; ++i)
 	{
-		// 获取字符对应的字形信息
-		Character ch = m_Characters[text[i]];
+		// 获取字符对应的字形信息，缺失的字符直接跳过（原因同 ASCII 版本）
+		auto it = m_Characters.find(text[i]);
+		if (it == m_Characters.end()) continue;
+		Character ch = it->second;
 
 		// 计算字符的渲染位置
 		GLfloat xpos = x + ch.bearing.x * scale;

@@ -29,6 +29,9 @@ public:
 	bool CreateFrameBufferObj();
 
 private:
+	// 转换结果是否已经保存到文件。原来每次 Draw 都 new 一块缓冲、glReadPixels 并写一次文件，
+	// 连续渲染时会持续写盘并阻塞 GL 线程；现在只读回并保存一次
+	bool m_YuyvDumped;
 	GLuint m_ImageTextureId;
 	GLuint m_FboTextureId;
 	GLuint m_FboId;

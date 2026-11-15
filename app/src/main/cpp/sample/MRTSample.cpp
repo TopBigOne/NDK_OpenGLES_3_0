@@ -22,6 +22,7 @@ MRTSample::MRTSample()
 
 	m_SamplerLoc = GL_NONE;
 	m_MVPMatLoc = GL_NONE;
+	m_ScreenMVPMatLoc = -1;
 
 	m_TextureId = GL_NONE;
 	m_VaoId = GL_NONE;
@@ -122,6 +123,8 @@ bool MRTSample::Init()
 	{
 		m_SamplerLoc = glGetUniformLocation(m_MRTProgramObj, "s_Texture");
 		m_MVPMatLoc = glGetUniformLocation(m_MRTProgramObj, "u_MVPMatrix");
+		// uniform location 属于具体的 program，第二遍用 m_ProgramObj 绘制时必须用它自己的位置
+		m_ScreenMVPMatLoc = glGetUniformLocation(m_ProgramObj, "u_MVPMatrix");
 	}
 	else
 	{
@@ -233,7 +236,7 @@ void MRTSample::Draw(int screenW, int screenH)
 	glClear(GL_COLOR_BUFFER_BIT);
     glUseProgram (m_ProgramObj);
 	UpdateMVPMatrix(m_MVPMatrix, 0, m_AngleY, (float)screenW / screenH);
-	glUniformMatrix4fv(m_MVPMatLoc, 1, GL_FALSE, &m_MVPMatrix[0][0]);
+	glUniformMatrix4fv(m_ScreenMVPMatLoc, 1, GL_FALSE, &m_MVPMatrix[0][0]);
 
     for (int i = 0; i < ATTACHMENT_NUM; ++i)
     {

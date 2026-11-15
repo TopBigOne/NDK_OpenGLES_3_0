@@ -415,6 +415,8 @@ Noise3DSample::Noise3DSample()
 	m_ScaleY = 1.0f;
 
 	m_ModelMatrix = glm::mat4(0.0f);
+	// Draw 中会对 m_CurTime 做累加，原来没有初值，结果是未定义的
+	m_CurTime = 0.0f;
 }
 
 Noise3DSample::~Noise3DSample()

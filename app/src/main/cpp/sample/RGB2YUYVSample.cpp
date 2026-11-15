@@ -22,6 +22,7 @@ RGB2YUYVSample::RGB2YUYVSample()
 	m_FboVertexShader = GL_NONE;
 	m_FboFragmentShader = GL_NONE;
 	m_FboSamplerLoc = GL_NONE;
+	m_YuyvDumped = false;
 }
 
 RGB2YUYVSample::~RGB2YUYVSample()
@@ -248,19 +249,24 @@ void RGB2YUYVSample::Draw(int screenW, int screenH)
 	glBindVertexArray(0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	//YUYV buffer = width * height * 2;
-	uint8_t *pBuffer = new uint8_t[m_RenderImage.width * m_RenderImage.height * 2];
+	if (!m_YuyvDumped)
+	{
+		//YUYV buffer = width * height * 2;
+		uint8_t *pBuffer = new uint8_t[m_RenderImage.width * m_RenderImage.height * 2];
 
-	NativeImage nativeImage = m_RenderImage;
-	nativeImage.format = IMAGE_FORMAT_YUYV;
-	nativeImage.ppPlane[0] = pBuffer;
-	FUN_BEGIN_TIME("FBO glReadPixels")
-		glReadPixels(0, 0, m_RenderImage.width / 2, nativeImage.height, GL_RGBA, GL_UNSIGNED_BYTE, pBuffer);
-	FUN_END_TIME("FBO cost glReadPixels")
+		NativeImage nativeImage = m_RenderImage;
+		nativeImage.format = IMAGE_FORMAT_YUYV;
+		nativeImage.ppPlane[0] = pBuffer;
+		nativeImage.ppPlane[1] = nativeImage.ppPlane[2] = nullptr;
+		FUN_BEGIN_TIME("FBO glReadPixels")
+			glReadPixels(0, 0, m_RenderImage.width / 2, nativeImage.height, GL_RGBA, GL_UNSIGNED_BYTE, pBuffer);
+		FUN_END_TIME("FBO cost glReadPixels")
 
-	std::string path(DEFAULT_OGL_ASSETS_DIR);
-	NativeImageUtil::DumpNativeImage(&nativeImage, path.c_str(), "RGB2YUV");
-	delete []pBuffer;
+		std::string path(DEFAULT_OGL_ASSETS_DIR);
+		NativeImageUtil::DumpNativeImage(&nativeImage, path.c_str(), "RGB2YUV");
+		delete []pBuffer;
+		m_YuyvDumped = true;
+	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -312,6 +318,9 @@ bool RGB2YUYVSample::CreateFrameBufferObj()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImage.width / 2, m_RenderImage.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER)!= GL_FRAMEBUFFER_COMPLETE) {
 		LOGCATE("RGB2YUYVSample::CreateFrameBufferObj glCheckFramebufferStatus status != GL_FRAMEBUFFER_COMPLETE");
+		// 失败路径同样恢复绑定，避免后续绘制落到这个不完整的 FBO 上
+		glBindTexture(GL_TEXTURE_2D, GL_NONE);
+		glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
 		return false;
 	}
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);

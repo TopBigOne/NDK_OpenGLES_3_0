@@ -28,6 +28,9 @@ MultiSampleAntiAliasingSample::MultiSampleAntiAliasingSample()
 	m_FboId = GL_NONE;
 	m_RboId = GL_NONE;
 	m_FboId2 = GL_NONE;
+	m_FboWidth = 0;
+	m_FboHeight = 0;
+	m_FboReady = false;
 
 	// Init 失败时基类会调用 Destroy，所有句柄都必须有确定的初值
 	m_ProgramObj2 = GL_NONE;
@@ -181,17 +184,22 @@ void MultiSampleAntiAliasingSample::Draw(int screenW, int screenH)
 
 	if(m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
 
+	// 多重采样纹理用 glTexStorage2DMultisample 分配（不可变存储），
+	// 视图尺寸变化后只能删掉 FBO 及附件重新创建，否则 blit 区域与附件尺寸不一致
+	if (m_FboId != GL_NONE && (m_FboWidth != screenW || m_FboHeight != screenH)) {
+		GLUtils::DeleteFramebuffer(m_FboId);
+		GLUtils::DeleteFramebuffer(m_FboId2);
+		GLUtils::DeleteTexture(m_MultiSampleTexId);
+	}
+
 	if(m_FboId == GL_NONE) {
 		GLint defaultFrameBuffer = GL_NONE;
 		glGetIntegerv(GL_FRAMEBUFFER_BINDING, &defaultFrameBuffer);
+		m_FboWidth = screenW;
+		m_FboHeight = screenH;
 
 		glGenFramebuffers(1, &m_FboId);
 		glBindFramebuffer(GL_FRAMEBUFFER, m_FboId);
-
-//		glGenRenderbuffers(1, &m_RboId);
-//		glBindRenderbuffer(GL_RENDERBUFFER, m_RboId);
-//		glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_RGBA8, screenW, screenH);
-//		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, m_RboId);
 
 		glGenTextures(1, &m_MultiSampleTexId);
 		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_MultiSampleTexId);
@@ -201,7 +209,8 @@ void MultiSampleAntiAliasingSample::Draw(int screenW, int screenH)
 		glFramebufferTexture2D(
 				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, m_MultiSampleTexId, 0
 		);
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE){
+		bool msaaComplete = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+		if (!msaaComplete){
 			LOGCATE("MultiSampleAntiAliasingSample:: Framebuffer is not complete!");
 		}
 
@@ -211,13 +220,20 @@ void MultiSampleAntiAliasingSample::Draw(int screenW, int screenH)
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_TextureId2, 0);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, screenW, screenH, 0, GL_RGBA, GL_UNSIGNED_BYTE,
 					 nullptr);
+		glBindTexture(GL_TEXTURE_2D, GL_NONE);
 
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER)!= GL_FRAMEBUFFER_COMPLETE) {
+		bool resolveComplete = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+		if (!resolveComplete) {
 			LOGCATE("MultiSampleAntiAliasingSample::CreateFrameBufferObj glCheckFramebufferStatus status != GL_FRAMEBUFFER_COMPLETE");
 		}
 
 		glBindFramebuffer(GL_FRAMEBUFFER, defaultFrameBuffer);
+		// 原实现 FBO 不完整时仍然继续 blit/绘制，只会产生 GL 错误。
+		// 这里记录结果，不完整就跳过绘制；尺寸不变时不再每帧重试（避免刷日志），尺寸变化时会重建。
+		m_FboReady = msaaComplete && resolveComplete;
 	}
+
+	if (!m_FboReady) return;
 
 	GLint defaultFrameBuffer = GL_NONE;
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &defaultFrameBuffer);
@@ -250,7 +266,9 @@ void MultiSampleAntiAliasingSample::Draw(int screenW, int screenH)
 	glUseProgram (m_ProgramObj2);
 	glBindVertexArray(m_VaoId);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_TextureId2);
+	// m_TextureId2 是普通 2D 纹理（多重采样结果已 blit 到它），必须绑定到 GL_TEXTURE_2D；
+	// 原来绑到 GL_TEXTURE_2D_MULTISAMPLE 会产生 GL_INVALID_OPERATION，着色器采样不到它
+	glBindTexture(GL_TEXTURE_2D, m_TextureId2);
 	GLUtils::setInt(m_ProgramObj2, "s_Texture", 0);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const void *)0);
 }

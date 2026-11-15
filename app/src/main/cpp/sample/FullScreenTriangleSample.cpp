@@ -13,6 +13,7 @@
 FullScreenTriangleSample::FullScreenTriangleSample()
 {
 	m_TextureId = 0;
+	m_SamplerLoc = -1;  // 原来没有初始化
 
 }
 

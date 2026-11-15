@@ -396,11 +396,8 @@ void PBOSample::Destroy()
 	GLUtils::DeleteFramebuffer(m_FboId);
 	GLUtils::DeleteBuffers(2, m_DownloadPboIds);  // 删除下载 PBO
 	GLUtils::DeleteBuffers(2, m_UploadPboIds);    // 删除上传 PBO
-
-    // 释放从下载 PBO 拷贝出来的图像数据
-    NativeImageUtil::FreeNativeImage(&m_DownloadImages[0]);
-    NativeImageUtil::FreeNativeImage(&m_DownloadImages[1]);
-
+	// 读回的图像（m_DownloadImages）是 CPU 数据，只在析构函数里释放：
+	// 若在这里释放，上下文重建后 DownloadPixels 会认为尚未保存，把同样的图片再写一遍文件
 }
 
 /**
@@ -433,6 +430,9 @@ bool PBOSample::CreateFrameBufferObj()
 	// 检查 FBO 完整性
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER)!= GL_FRAMEBUFFER_COMPLETE) {
 		LOGCATE("PBOSample::CreateFrameBufferObj glCheckFramebufferStatus status != GL_FRAMEBUFFER_COMPLETE");
+		// 失败时也要恢复绑定，避免把不完整的 FBO 留作当前绘制目标
+		glBindTexture(GL_TEXTURE_2D, GL_NONE);
+		glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
 		return false;
 	}
 
@@ -534,9 +534,13 @@ void PBOSample::UploadPixels() {
 		memcpy(bufPtr, m_RenderImage.ppPlane[0], static_cast<size_t>(dataSize));
 
 		// 模拟修改：随机位置绘制5行灰色条纹（用于观察效果）
-		int randomRow = rand() % (m_RenderImage.height - 5);
-		memset(bufPtr + randomRow * m_RenderImage.width * 4, 188,
-        static_cast<size_t>(m_RenderImage.width * 4 * 5));
+		// 高度不足 6 行时 rand() % (height - 5) 会除零或得到负偏移，memset 越界，必须跳过
+		if (m_RenderImage.height > 5)
+		{
+			int randomRow = rand() % (m_RenderImage.height - 5);
+			memset(bufPtr + randomRow * m_RenderImage.width * 4, 188,
+			static_cast<size_t>(m_RenderImage.width * 4 * 5));
+		}
 
 		// 取消映射，数据将自动传输到 GPU
 		glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
@@ -550,9 +554,13 @@ void PBOSample::UploadPixels() {
 	NativeImageUtil::AllocNativeImage(&nativeImage);
 	BEGIN_TIME("PBOSample::UploadPixels Update Image data")
 		// 随机位置绘制5行灰色条纹
-		int randomRow = rand() % (m_RenderImage.height - 5);
-		memset(m_RenderImage.ppPlane[0] + randomRow * m_RenderImage.width * 4, 188,
-		static_cast<size_t>(m_RenderImage.width * 4 * 5));
+		// 没有图像或高度不足 6 行时，rand() % (height - 5) 会除零/得到负偏移，memset 越界或写空指针
+		if (m_RenderImage.ppPlane[0] != nullptr && m_RenderImage.height > 5)
+		{
+			int randomRow = rand() % (m_RenderImage.height - 5);
+			memset(m_RenderImage.ppPlane[0] + randomRow * m_RenderImage.width * 4, 188,
+			static_cast<size_t>(m_RenderImage.width * 4 * 5));
+		}
         NativeImageUtil::CopyNativeImage(&m_RenderImage, &nativeImage);
 	END_TIME("PBOSample::UploadPixels Update Image data")
 	NativeImageUtil::FreeNativeImage(&nativeImage);

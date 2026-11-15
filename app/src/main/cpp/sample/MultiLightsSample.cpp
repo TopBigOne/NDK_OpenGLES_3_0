@@ -27,7 +27,8 @@
 #include "../util/GLUtils.h"
 
 // 定义多个立方体的位置向量数组
-glm::vec3 transPositions[] = {
+// static：避免与其它编译单元的同名全局数组发生 ODR 冲突
+static glm::vec3 transPositions[] = {
 		glm::vec3( 0.0f,  0.0f,  0.0f),
 		glm::vec3( 2.0f,  2.0f, -1.0f),
 		glm::vec3(-1.5f, -2.2f, -1.5f),
@@ -52,10 +53,12 @@ MultiLightsSample::MultiLightsSample()
 	m_SamplerLoc = GL_NONE;
 	m_MVPMatLoc = GL_NONE;
 	m_ModelMatrixLoc = GL_NONE;
+	m_ViewPosLoc = GL_NONE;
 
 	// 初始化 OpenGL 对象 ID
 	m_TextureId = GL_NONE;
 	m_VaoId = GL_NONE;
+	m_VboIds[0] = GL_NONE;  // 原来没有初始化，Init 失败时 Destroy 会拿垃圾值去删除
 
 	// 初始化旋转角度
 	m_AngleX = 0;

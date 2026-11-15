@@ -316,6 +316,13 @@ void SkyBoxSample::LoadImage(NativeImage *pImage)
  */
 void SkyBoxSample::LoadMultiImageWithIndex(int index, NativeImage *pImage)
 {
+	// index 来自 Java 层，立方体贴图只有 6 个面，越界会写坏对象内存
+	const int faceCount = sizeof(m_pSkyBoxRenderImg) / sizeof(m_pSkyBoxRenderImg[0]);
+	if (index < 0 || index >= faceCount)
+	{
+		LOGCATE("SkyBoxSample::LoadMultiImageWithIndex invalid index=%d", index);
+		return;
+	}
 	if (pImage)
 	{
 		LOGCATD("SkyBoxSample::LoadMultiImageWithIndex pImage = %p, index=%d", pImage->ppPlane[0], index);

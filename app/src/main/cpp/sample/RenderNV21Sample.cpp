@@ -70,7 +70,6 @@ bool RenderNV21Sample::Init()
 	 */
 	char fShaderStr[] =R"(
 		#version 300 es
-		#extension GL_EXT_YUV_target: require
 		precision highp float;
 		in vec2 v_texCoord;
 		uniform sampler2D y_texture;
@@ -132,6 +131,9 @@ bool RenderNV21Sample::Init()
 	 *   [width*height, width*height*1.5): VU 交错数据
 	 */
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
+	// 行宽 width 字节不一定是 4 的倍数（示例图 4406 宽），默认 4 字节对齐会让驱动按补齐后的行宽读取，
+	// 既错位又会读出缓冲末尾。原来在 Draw 里才设置 1 字节对齐，晚于这里的上传，必须提前。
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glTexImage2D ( GL_TEXTURE_2D, 0, GL_LUMINANCE, m_RenderImage.width, m_RenderImage.height * 3 / 2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);
 
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -139,6 +141,7 @@ bool RenderNV21Sample::Init()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4); // 恢复默认值，避免影响后续上传
 	return true;
 }
 
@@ -150,8 +153,6 @@ bool RenderNV21Sample::Init()
 void RenderNV21Sample::Draw(int screenW, int screenH)
 {
 	LOGCATV("RenderNV21Sample::Draw()");
-	// 设置像素对齐方式为 1 字节 (处理非 4 字节对齐的数据)
-	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 	if(m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
 
 	// 顶点坐标 (NDC 归一化设备坐标, 全屏矩形)

@@ -47,6 +47,8 @@ private:
 	int m_AngleY;
 	float m_ScaleX;
 	float m_ScaleY;
+	// 动画帧计数。原来是 Draw 里的函数级 static，被所有实例共享，再次进入示例时动画不从头开始
+	int m_FrameIndex;
 
 };
 

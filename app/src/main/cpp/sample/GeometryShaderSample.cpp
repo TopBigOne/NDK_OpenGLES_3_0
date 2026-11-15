@@ -13,6 +13,9 @@
 GeometryShaderSample::GeometryShaderSample()
 {
 	m_TextureId = 0;
+    // 原来没有初始化，Init 失败时 Destroy 会拿垃圾值去删除
+    m_VaoId = GL_NONE;
+    m_VboId = GL_NONE;
     m_FrameIndex = 0;
 }
 

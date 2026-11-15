@@ -39,6 +39,9 @@ public:
 	virtual void Destroy();
 
 private:
+	// 从文件读取 P010 图像，读取失败（文件不存在/不完整）返回 false
+	bool LoadP010FromFile();
+
 	GLuint m_yTextureId;
 	GLuint m_uvTextureId;
 

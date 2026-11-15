@@ -232,7 +232,8 @@ bool BlendingSample::Init()
 void BlendingSample::LoadMultiImageWithIndex(int index, NativeImage *pImage)
 {
 	GLSampleBase::LoadMultiImageWithIndex(index, pImage);
-	if (pImage)
+	// index 来自 Java 层，越界会写坏 m_RenderImages 之后的成员
+	if (pImage && index >= 0 && index < RENDER_IMG_NUM)
 	{
 		LOGCATD("BlendingSample::LoadImage index=%d, pImage = %p", index, pImage->ppPlane[0]);
 		NativeImageUtil::CopyNativeImage(pImage, &m_RenderImages[index]);

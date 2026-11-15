@@ -32,8 +32,12 @@ VisualizeAudioSample::VisualizeAudioSample() {
 
     memset(m_VboIds, 0, sizeof(GLuint) * 2);
 
-    m_FrameIndex = 0;
     m_pAudioBuffer = nullptr;
+    m_pPendingAudio = nullptr;
+    m_bPendingReady = false;
+    m_WindowChunkCount = 0;
+    m_RenderDataSize = 0;
+    m_VboRenderDataSize = 0;
     m_bAudioDataReady = false;
 }
 
@@ -41,6 +45,11 @@ VisualizeAudioSample::~VisualizeAudioSample() {
     if (m_pAudioBuffer != nullptr) {
         delete [] m_pAudioBuffer;
         m_pAudioBuffer = nullptr;
+    }
+
+    if (m_pPendingAudio != nullptr) {
+        delete [] m_pPendingAudio;
+        m_pPendingAudio = nullptr;
     }
 
     if (m_pTextureCoords != nullptr) {
@@ -117,13 +126,22 @@ void VisualizeAudioSample::Draw(int screenW, int screenH) {
     LOGCATV("VisualizeAudioSample::Draw()");
     glClearColor(1.0f, 1.0f, 1.0f, 1.0);
     if (m_ProgramObj == GL_NONE) return;
-    std::this_thread::sleep_for(std::chrono::milliseconds(25));
+    // 原来这里在 GL 线程上 sleep 25ms，期间还持有 MyGLRenderContext 的锁，会把 UI 线程和
+    // 音频线程的 SetXXX 一起卡住；节奏现在由“每帧推进一步、走完再换下一块音频”控制，不再需要 sleep。
+    // 整个 Draw 持有 m_Mutex：网格数组可能被音频线程在尺寸变化时重新分配，上传 VBO 时必须互斥。
     std::unique_lock<std::mutex> lock(m_Mutex);
-    if (!m_bAudioDataReady) return;
     UpdateMesh();
-    lock.unlock();
+    // 窗口第一次攒满之前还没有算过网格，不画；之后即使暂时没有新音频，也继续画上一帧的网格，避免闪白
+    if (m_WindowChunkCount < 2 || m_RenderDataSize <= 0 || m_pVerticesCoords == nullptr) return;
 
     UpdateMVPMatrix(m_MVPMatrix, m_AngleX, m_AngleY, (float) screenW / screenH);
+
+    // 音频块大小变化后网格条数变了，旧 VBO 容量不够，需要按新大小重建（VAO 引用旧 VBO，一并重建）
+    if (m_VboIds[0] != GL_NONE && m_VboRenderDataSize != m_RenderDataSize)
+    {
+        GLUtils::DeleteBuffers(2, m_VboIds);
+        GLUtils::DeleteVertexArray(m_VaoId);
+    }
 
     // Generate VBO Ids and load the VBOs with data
     if(m_VboIds[0] == 0)
@@ -135,6 +153,7 @@ void VisualizeAudioSample::Draw(int screenW, int screenH) {
 
         glBindBuffer(GL_ARRAY_BUFFER, m_VboIds[1]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * m_RenderDataSize * 6 * 2, m_pTextureCoords, GL_DYNAMIC_DRAW);
+        m_VboRenderDataSize = m_RenderDataSize;
     }
     else
     {
@@ -177,14 +196,11 @@ void VisualizeAudioSample::Draw(int screenW, int screenH) {
 }
 
 void VisualizeAudioSample::Destroy() {
-    std::unique_lock<std::mutex> lock(m_Mutex);
-    m_Cond.notify_all();
-    lock.unlock();
-
     // VBO/VAO 在 Draw 中懒创建，helper 清零后上下文重建时 Draw 会重新创建
     GLUtils::DeleteProgram(m_ProgramObj);
     GLUtils::DeleteBuffers(2, m_VboIds);
     GLUtils::DeleteVertexArray(m_VaoId);
+    m_VboRenderDataSize = 0;
 
 }
 
@@ -236,43 +252,70 @@ void VisualizeAudioSample::UpdateTransformMatrix(float rotateX, float rotateY, f
 }
 
 void VisualizeAudioSample::LoadShortArrData(short *const pShortArr, int arrSize) {
-    //GLSampleBase::LoadShortArrData(pShortArr, arrSize);
     LOGCATV("VisualizeAudioSample::LoadShortArrData pShortArr=%p, arrSize=%d", pShortArr, arrSize);
-    if (pShortArr == nullptr || arrSize == 0)
+    if (pShortArr == nullptr || arrSize <= 0)
         return;
-    m_FrameIndex++;
-    std::unique_lock<std::mutex> lock(m_Mutex);
-    if(m_FrameIndex == 1)
-    {
-        m_pAudioBuffer = new short[arrSize * 2];
-        memcpy(m_pAudioBuffer, pShortArr, sizeof(short) * arrSize);
-        m_AudioDataSize = arrSize;
-        return;
-    }
 
-    if(m_FrameIndex == 2)
+    // 原实现在这里 m_Cond.wait() 等 GL 线程把当前窗口画完。但本函数是在
+    // MyGLRenderContext 的锁内被音频线程调用的，wait 只释放示例自己的 m_Mutex，
+    // GL 线程拿不到上下文锁就永远走不到 notify —— 音频一开始就死锁。
+    // 现在不再阻塞：只把最新一块数据拷贝到 m_pPendingAudio，GL 线程走完当前窗口后再取用，
+    // 期间来不及消费的旧块直接被新块覆盖（可视化只需要最新数据）。
+    std::lock_guard<std::mutex> lock(m_Mutex);
+    if (arrSize != m_AudioDataSize || m_pPendingAudio == nullptr)
     {
-        memcpy(m_pAudioBuffer + arrSize, pShortArr, sizeof(short) * arrSize);
-        m_RenderDataSize = m_AudioDataSize / RESAMPLE_LEVEL;
-        m_pVerticesCoords = new vec3[m_RenderDataSize * 6]; //(x,y,z) * 6 points
-        m_pTextureCoords = new vec2[m_RenderDataSize * 6]; //(x,y) * 6 points
+        // 原实现按第一块的大小分配缓冲，之后块变大会越界写；大小变化时按新容量重新分配
+        ReallocAudioBuffers(arrSize);
     }
+    memcpy(m_pPendingAudio, pShortArr, sizeof(short) * arrSize);
+    m_bPendingReady = true;
+}
 
-    if(m_FrameIndex > 2)
-    {
-        memcpy(m_pAudioBuffer, m_pAudioBuffer + arrSize, sizeof(short) * arrSize);
-        memcpy(m_pAudioBuffer + arrSize, pShortArr, sizeof(short) * arrSize);
-    }
-    LOGCATV("VisualizeAudioSample::Draw() m_bAudioDataReady = true");
-    m_bAudioDataReady = true;
+void VisualizeAudioSample::ReallocAudioBuffers(int arrSize) {
+    delete [] m_pAudioBuffer;
+    delete [] m_pPendingAudio;
+    delete [] m_pVerticesCoords;
+    delete [] m_pTextureCoords;
+
+    m_AudioDataSize = arrSize;
+    m_pAudioBuffer = new short[arrSize * 2];
+    m_pPendingAudio = new short[arrSize];
+    m_RenderDataSize = arrSize / RESAMPLE_LEVEL;
+    m_pVerticesCoords = m_RenderDataSize > 0 ? new vec3[m_RenderDataSize * 6] : nullptr; //(x,y,z) * 6 points
+    m_pTextureCoords = m_RenderDataSize > 0 ? new vec2[m_RenderDataSize * 6] : nullptr;  //(x,y) * 6 points
+
+    // 窗口需要重新攒满两块
     m_pCurAudioData = m_pAudioBuffer;
-    m_Cond.wait(lock);
+    m_WindowChunkCount = 0;
+    m_bPendingReady = false;
+    m_bAudioDataReady = false;
+}
 
+bool VisualizeAudioSample::ShiftPendingAudioIntoWindow() {
+    if (!m_bPendingReady || m_pAudioBuffer == nullptr) return false;
+
+    // 窗口 = 前一块 + 当前块：先把后半段挪到前半段，再把最新块放到后半段（与原实现相同）
+    memmove(m_pAudioBuffer, m_pAudioBuffer + m_AudioDataSize, sizeof(short) * m_AudioDataSize);
+    memcpy(m_pAudioBuffer + m_AudioDataSize, m_pPendingAudio, sizeof(short) * m_AudioDataSize);
+    m_bPendingReady = false;
+    if (m_WindowChunkCount < 2) m_WindowChunkCount++;
+    if (m_WindowChunkCount < 2) return false;
+
+    m_pCurAudioData = m_pAudioBuffer;
+    m_bAudioDataReady = true;
+    return true;
 }
 
 void VisualizeAudioSample::UpdateMesh() {
+    // 当前窗口已经走完（或还没开始）时，换入音频线程送来的最新一块
+    if (!m_bAudioDataReady && !ShiftPendingAudioIntoWindow())
+        return;
+    if (m_RenderDataSize <= 0)
+        return;
+
     //calculate mesh
-    int step = m_AudioDataSize / 64;
+    // step 至少为 1：块很小时 m_AudioDataSize / 64 为 0，原实现会原地不动
+    int step = m_AudioDataSize / 64 > 0 ? m_AudioDataSize / 64 : 1;
     if(m_pAudioBuffer + m_AudioDataSize - m_pCurAudioData >= step)
     {
         LOGCATV("VisualizeAudioSample::Draw() m_pAudioBuffer + m_AudioDataSize - m_pCurAudioData >= step");
@@ -306,8 +349,8 @@ void VisualizeAudioSample::UpdateMesh() {
     else
     {
         LOGCATV("VisualizeAudioSample::Draw() m_pAudioBuffer + m_AudioDataSize - m_pCurAudioData < step");
-        m_bAudioDataReady = false;
-        m_Cond.notify_all();
+        // 走完了：下一帧换入新的音频块；没有新块时保留上一帧网格继续显示
+        m_bAudioDataReady = ShiftPendingAudioIntoWindow();
         return;
     }
 }

@@ -432,9 +432,10 @@ int ParticlesSample::UpdateParticles()
 				m_pParticlesColorData[4 * particlesCount + 2] = p.b;
 				m_pParticlesColorData[4 * particlesCount + 3] = p.a;
 
+				// 只有本帧写入了实例数据的粒子才计数；原来放在外层 if 中，
+				// 本帧刚死亡的粒子也会计数，导致绘制未写入（首帧为未初始化内存）的实例
+				particlesCount++;
 			}
-
-			particlesCount++;
 
 		}
 	}

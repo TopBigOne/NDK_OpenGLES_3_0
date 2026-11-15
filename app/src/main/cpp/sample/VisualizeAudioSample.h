@@ -42,6 +42,12 @@ public:
 	void UpdateMesh();
 
 private:
+	// 音频块大小变化时重新分配所有 CPU 缓冲（调用方需持有 m_Mutex）
+	void ReallocAudioBuffers(int arrSize);
+	// 窗口内数据已经走完时，把待处理的最新音频块移入窗口（调用方需持有 m_Mutex）
+	bool ShiftPendingAudioIntoWindow();
+
+private:
 	GLint m_SamplerLoc;
 	GLint m_MVPMatLoc;
 	GLuint m_VaoId;
@@ -53,18 +59,20 @@ private:
 	float m_ScaleX;
 	float m_ScaleY;
 
-	short *m_pCurAudioData;
-	short *m_pAudioBuffer;
-	int m_AudioDataSize;
+	short *m_pCurAudioData;      // 当前绘制位置（指向 m_pAudioBuffer 窗口内）
+	short *m_pAudioBuffer;       // 窗口：前一块 + 当前块，容量 m_AudioDataSize * 2
+	short *m_pPendingAudio;      // 音频线程写入的最新一块，容量 m_AudioDataSize
+	int m_AudioDataSize;         // 单块音频的样本数，即缓冲容量的依据
+	bool m_bPendingReady;        // m_pPendingAudio 中有尚未消费的数据
+	int m_WindowChunkCount;      // 已经移入窗口的块数，>= 2 时窗口才完整
 	std::mutex m_Mutex;
-	std::condition_variable m_Cond;
 
 	vec3 *m_pVerticesCoords;
 	vec2 *m_pTextureCoords;
-	int m_RenderDataSize;
+	int m_RenderDataSize;        // 网格条数 = m_AudioDataSize / RESAMPLE_LEVEL
+	int m_VboRenderDataSize;     // 当前 VBO 按多少条网格分配，与 m_RenderDataSize 不一致时需重建
 
-	int m_FrameIndex;
-	volatile bool m_bAudioDataReady;
+	bool m_bAudioDataReady;      // 窗口完整且 m_pCurAudioData 还没走完
 
 };
 

@@ -40,7 +40,7 @@ public:
 private:
 	GLuint m_TextureId;
 
-	GLuint m_TextureLoc;
+	GLint m_TextureLoc;  // glGetUniformLocation 返回 GLint，找不到时为 -1
 
 	NativeImage m_RenderImage;
 

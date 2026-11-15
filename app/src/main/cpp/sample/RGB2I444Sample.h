@@ -40,6 +40,8 @@ private:
 	GLuint m_FboVertexShader;
 	GLuint m_FboFragmentShader;
 	GLint m_FboSamplerLoc;
+	// 转换结果只需要读回并保存一次，原实现每帧 new + glReadPixels + 写文件
+	bool m_bImageDumped;
 	//GLuint m_YuyvWidth;
 
 };

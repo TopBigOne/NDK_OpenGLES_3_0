@@ -35,6 +35,11 @@ BasicLightingSample::BasicLightingSample()
 	m_MVPMatLoc = GL_NONE;
 	m_ModelMatrixLoc = GL_NONE;
 	m_LightPosLoc = GL_NONE;
+	// 以下成员原来未初始化：值不确定，补齐初始化
+	m_LightColorLoc = GL_NONE;
+	m_ViewPosLoc = GL_NONE;
+	m_TfoId = GL_NONE;
+	m_TfoBufId = GL_NONE;
 
 	// 初始化 OpenGL 对象 ID
 	m_TextureId = GL_NONE;

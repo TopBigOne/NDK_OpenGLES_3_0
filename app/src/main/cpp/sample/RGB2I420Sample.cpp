@@ -8,6 +8,7 @@
 
 #include <GLUtils.h>
 #include "RGB2I420Sample.h"
+#include <vector>
 
 #define VERTEX_POS_INDX  0
 #define TEXTURE_POS_INDX 1
@@ -22,6 +23,7 @@ RGB2I420Sample::RGB2I420Sample()
 	m_FboVertexShader = GL_NONE;
 	m_FboFragmentShader = GL_NONE;
 	m_FboSamplerLoc = GL_NONE;
+	m_ImageSaved = false;
 }
 
 RGB2I420Sample::~RGB2I420Sample()
@@ -300,21 +302,26 @@ void RGB2I420Sample::Draw(int screenW, int screenH)
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	//I420 buffer = width * height * 1.5;
-	uint8_t *pBuffer = new uint8_t[m_RenderImage.width * m_RenderImage.height * 3 / 2];
+	// 原实现每帧 new 一块 w*h*1.5 的缓冲、同步 glReadPixels 并写一次文件，逐帧阻塞 GPU 和磁盘 I/O。
+	// 转换结果只用于保存演示，图像不变，因此只读回并保存一次；缓冲用 vector 管理，异常路径也不会泄漏。
+	if (!m_ImageSaved)
+	{
+		std::vector<uint8_t> buffer(static_cast<size_t>(m_RenderImage.width) * m_RenderImage.height * 3 / 2);
+		uint8_t *pBuffer = buffer.data();
 
-	NativeImage nativeImage = m_RenderImage;
-	nativeImage.format = IMAGE_FORMAT_I420;
-	nativeImage.ppPlane[0] = pBuffer;
-	nativeImage.ppPlane[1] = pBuffer + m_RenderImage.width * m_RenderImage.height;
-    nativeImage.ppPlane[2] = nativeImage.ppPlane[1] + m_RenderImage.width * m_RenderImage.height / 4;
-	BEGIN_TIME("FBO glReadPixels")
-		glReadPixels(0, 0, nativeImage.width / 4, nativeImage.height * 1.5, GL_RGBA, GL_UNSIGNED_BYTE, pBuffer);
-	END_TIME("FBO glReadPixels")
+		NativeImage nativeImage = m_RenderImage;
+		nativeImage.format = IMAGE_FORMAT_I420;
+		nativeImage.ppPlane[0] = pBuffer;
+		nativeImage.ppPlane[1] = pBuffer + m_RenderImage.width * m_RenderImage.height;
+		nativeImage.ppPlane[2] = nativeImage.ppPlane[1] + m_RenderImage.width * m_RenderImage.height / 4;
+		BEGIN_TIME("FBO glReadPixels")
+			glReadPixels(0, 0, nativeImage.width / 4, nativeImage.height * 1.5, GL_RGBA, GL_UNSIGNED_BYTE, pBuffer);
+		END_TIME("FBO glReadPixels")
 
-	//保存 I420 格式的 YUV 图片
-	std::string path(DEFAULT_OGL_ASSETS_DIR);
-	NativeImageUtil::DumpNativeImage(&nativeImage, path.c_str(), "RGB2I420");
-	delete []pBuffer;
+		std::string path(DEFAULT_OGL_ASSETS_DIR);
+		NativeImageUtil::DumpNativeImage(&nativeImage, path.c_str(), "RGB2I420");
+		m_ImageSaved = true;
+	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -366,6 +373,9 @@ bool RGB2I420Sample::CreateFrameBufferObj()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImage.width / 4, m_RenderImage.height * 1.5, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER)!= GL_FRAMEBUFFER_COMPLETE) {
 		LOGCATE("RGB2I420Sample::CreateFrameBufferObj glCheckFramebufferStatus status != GL_FRAMEBUFFER_COMPLETE");
+		// 失败时也要恢复绑定，避免把不完整的 FBO 留作当前绘制目标
+		glBindTexture(GL_TEXTURE_2D, GL_NONE);
+		glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
 		return false;
 	}
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);

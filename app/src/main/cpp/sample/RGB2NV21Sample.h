@@ -40,6 +40,7 @@ private:
 	GLuint m_FboVertexShader;
 	GLuint m_FboFragmentShader;
 	GLint m_FboSamplerLoc;
+	bool m_ImageSaved;   // 转换结果是否已经保存过（只保存一次）
 	//GLuint m_YuyvWidth;
 
 };

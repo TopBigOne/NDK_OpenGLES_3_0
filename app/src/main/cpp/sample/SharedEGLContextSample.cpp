@@ -18,6 +18,7 @@ SharedEGLContextSample::SharedEGLContextSample()
 	m_VaoId = GL_NONE;
 	for (int i = 0; i < 4; ++i) m_VboIds[i] = GL_NONE;
 	m_LooperStarted = false;
+	m_AsyncFrameCount = 0;
 	m_ImageTextureId = GL_NONE;
 	m_FboTextureId = GL_NONE;
 	m_FboProgramObj = GL_NONE;
@@ -39,6 +40,12 @@ void SharedEGLContextSample::LoadImage(NativeImage *pImage)
 
 bool SharedEGLContextSample::Init()
 {
+	// 工作线程按图像尺寸创建离屏 FBO，没有图像时尺寸为 0，FBO 不完整且不会有任何反馈
+	if (m_RenderImage.ppPlane[0] == nullptr || m_RenderImage.width <= 0 || m_RenderImage.height <= 0)
+	{
+		LOGCATE("SharedEGLContextSample::Init no image loaded");
+		return false;
+	}
 
 	//顶点坐标
 	GLfloat vVertices[] = {
@@ -195,8 +202,17 @@ void SharedEGLContextSample::Draw(int screenW, int screenH)
 	LOGCATV("SharedEGLContextSample::Draw");
 	{
 		unique_lock<mutex> lock(m_Mutex);
+		const uint64_t lastFrame = m_AsyncFrameCount;
 		GLRenderLooper::GetInstance()->postMessage(MSG_DrawFrame);
-		m_Cond.wait(lock);
+		// 原来无谓词、无超时地 wait：虚假唤醒会画出未更新的纹理；工作线程初始化失败或卡住时，
+		// GL 线程会被永久阻塞（界面冻结、无法暂停）。改为等待帧计数变化，超时则跳过本帧。
+		bool done = m_Cond.wait_for(lock, std::chrono::milliseconds(100),
+									[this, lastFrame] { return m_AsyncFrameCount != lastFrame; });
+		if (!done || m_FboTextureId == GL_NONE)
+		{
+			LOGCATE("SharedEGLContextSample::Draw wait async render timeout, skip this frame");
+			return;
+		}
 	}
 
 	glViewport(0, 0, screenW, screenH);
@@ -219,6 +235,7 @@ void SharedEGLContextSample::OnAsyncRenderDone(void *callback, int fboTexId) {
 	SharedEGLContextSample *ctx = static_cast<SharedEGLContextSample *>(callback);
 	unique_lock<mutex> lock(ctx->m_Mutex);
 	ctx->m_FboTextureId = fboTexId;
+	ctx->m_AsyncFrameCount++;
 	ctx->m_Cond.notify_all();
 }
 

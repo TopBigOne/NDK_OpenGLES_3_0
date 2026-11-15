@@ -51,8 +51,8 @@ private:
 
 	void RenderText(const wchar_t* text, int textLen, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color, glm::vec2 viewport);
 
-	void LoadFacesByASCII();
-	void LoadFacesByUnicode(const wchar_t* text, int size);
+	bool LoadFacesByASCII();
+	bool LoadFacesByUnicode(const wchar_t* text, int size);
 
 	GLuint m_TextureId;
 	GLint m_SamplerLoc;

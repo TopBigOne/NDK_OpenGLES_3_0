@@ -20,6 +20,10 @@ TextureBufferSample::TextureBufferSample()
 
 	m_TextureId = GL_NONE;
 	m_VaoId = GL_NONE;
+	// 原来没有初始化，Init 失败时 Destroy 会拿垃圾值去删除
+	m_TboId = GL_NONE;
+	m_TboTexId = GL_NONE;
+	for (int i = 0; i < 3; ++i) m_VboIds[i] = GL_NONE;
 
 	m_AngleX = 0;
 	m_AngleY = 0;
@@ -165,12 +169,15 @@ void TextureBufferSample::LoadImage(NativeImage *pImage)
 void TextureBufferSample::Draw(int screenW, int screenH)
 {
 	LOGCATV("TextureBufferSample::Draw()");
+#ifndef NDEBUG
+    // 这些查询只用于调试日志，Release 下不必每帧访问驱动
     int maxVertexUniform, maxFragmentUniform, maxVarying, maxVextexAttri;
     glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &maxVertexUniform);
     glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &maxFragmentUniform);
     glGetIntegerv(GL_MAX_VARYING_COMPONENTS, &maxVarying);
     glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxVextexAttri);
     LOGCATV("TextureBufferSample:: MaxVertexUniform=%d, MaxFragUniform=%d, maxVarying=%d, maxVextexAttri=%d", maxVertexUniform, maxFragmentUniform, maxVarying, maxVextexAttri);
+#endif
 
     if(m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
 

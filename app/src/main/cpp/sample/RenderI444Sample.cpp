@@ -79,6 +79,9 @@ bool RenderI444Sample::Init()
 	//upload Y plane data
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
 	//GL_R16F, GL_RED, GL_HALF_FLOAT
+	// 单通道 8bit 数据每行 width 字节，宽度不是 4 的倍数时默认 4 字节对齐会错行；
+	// 必须在上传前设置（原来设置在 Draw 里，晚于 Init 中的这次上传），上传后恢复默认值避免影响其它上传
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glTexImage2D ( GL_TEXTURE_2D, 0, GL_LUMINANCE, m_RenderImage.width, m_RenderImage.height * 3, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);
 
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -86,13 +89,13 @@ bool RenderI444Sample::Init()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 	return true;
 }
 
 void RenderI444Sample::Draw(int screenW, int screenH)
 {
 	LOGCATV("RenderI444Sample::Draw()");
-	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 	if(m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
 
 	GLfloat verticesCoords[] = {

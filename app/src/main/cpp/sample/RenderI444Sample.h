@@ -40,7 +40,7 @@ public:
 private:
 	GLuint m_TextureId;
 
-	GLuint m_TextureLoc;
+	GLint m_TextureLoc;   // uniform location 是有符号的，-1 表示不存在
 
 	NativeImage m_RenderImage;
 

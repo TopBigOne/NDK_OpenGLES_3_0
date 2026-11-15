@@ -22,6 +22,7 @@ RGB2I444Sample::RGB2I444Sample()
 	m_FboVertexShader = GL_NONE;
 	m_FboFragmentShader = GL_NONE;
 	m_FboSamplerLoc = GL_NONE;
+	m_bImageDumped = false;
 }
 
 RGB2I444Sample::~RGB2I444Sample()
@@ -261,7 +262,6 @@ bool RGB2I444Sample::Init()
 void RGB2I444Sample::Draw(int screenW, int screenH)
 {
 	// 离屏渲染
-	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 	// Do FBO off screen rendering
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FboId);
     // 渲染成 I444 ，glviewport 宽度 1/4 * width, 高度 height * 3
@@ -279,21 +279,29 @@ void RGB2I444Sample::Draw(int screenW, int screenH)
 	glBindVertexArray(0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	//I444 buffer = width * height * 3;
-	uint8_t *pBuffer = new uint8_t[m_RenderImage.width * m_RenderImage.height * 3];
+	// 原实现每帧都读回并写一次文件，阻塞 GL 线程且反复分配大块内存；结果不变，只保存一次即可
+	if (!m_bImageDumped)
+	{
+		//I444 buffer = width * height * 3;
+		uint8_t *pBuffer = new uint8_t[m_RenderImage.width * m_RenderImage.height * 3];
 
-	NativeImage nativeImage = m_RenderImage;
-	nativeImage.format = IMAGE_FORMAT_I444;
-	nativeImage.ppPlane[0] = pBuffer;
-	nativeImage.ppPlane[1] = nativeImage.ppPlane[0] + m_RenderImage.width * m_RenderImage.height;
-    nativeImage.ppPlane[2] = nativeImage.ppPlane[1] + m_RenderImage.width * m_RenderImage.height;
-	FUN_BEGIN_TIME("FBO glReadPixels")
-		glReadPixels(0, 0, nativeImage.width / 4, nativeImage.height * 3, GL_RGBA, GL_UNSIGNED_BYTE, pBuffer);
-	FUN_END_TIME("FBO cost glReadPixels")
+		NativeImage nativeImage = m_RenderImage;
+		nativeImage.format = IMAGE_FORMAT_I444;
+		nativeImage.ppPlane[0] = pBuffer;
+		nativeImage.ppPlane[1] = nativeImage.ppPlane[0] + m_RenderImage.width * m_RenderImage.height;
+		nativeImage.ppPlane[2] = nativeImage.ppPlane[1] + m_RenderImage.width * m_RenderImage.height;
+		// glReadPixels 受 PACK 对齐控制（原来设置的是只影响上传的 UNPACK）；按 1 字节对齐保证行间无填充
+		glPixelStorei(GL_PACK_ALIGNMENT, 1);
+		FUN_BEGIN_TIME("FBO glReadPixels")
+			glReadPixels(0, 0, nativeImage.width / 4, nativeImage.height * 3, GL_RGBA, GL_UNSIGNED_BYTE, pBuffer);
+		FUN_END_TIME("FBO cost glReadPixels")
+		glPixelStorei(GL_PACK_ALIGNMENT, 4);
 
-	std::string path(DEFAULT_OGL_ASSETS_DIR);
-	NativeImageUtil::DumpNativeImage(&nativeImage, path.c_str(), "RGB2I444");
-	delete []pBuffer;
+		std::string path(DEFAULT_OGL_ASSETS_DIR);
+		NativeImageUtil::DumpNativeImage(&nativeImage, path.c_str(), "RGB2I444");
+		delete []pBuffer;
+		m_bImageDumped = true;
+	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

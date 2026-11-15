@@ -148,6 +148,9 @@ bool RenderI420Sample::Init()
 	 *   [width*height*1.25, width*height*1.5): V 平面数据
 	 */
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
+	// 单通道纹理一行只有 width 字节，宽度不是 4 的倍数时默认的 4 字节对齐会让每行错位。
+	// 对齐必须在上传之前设置；原来写在 Draw 里，而上传发生在 Init，设置根本没生效。
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glTexImage2D ( GL_TEXTURE_2D, 0, GL_LUMINANCE, m_RenderImage.width, m_RenderImage.height * 3 / 2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -165,8 +168,6 @@ bool RenderI420Sample::Init()
 void RenderI420Sample::Draw(int screenW, int screenH)
 {
 	LOGCATV("RenderI420Sample::Draw()");
-	// 设置像素对齐方式为 1 字节 (处理非 4 字节对齐的数据)
-	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 	if(m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
 
 	// 顶点坐标 (NDC 归一化设备坐标, 全屏矩形)

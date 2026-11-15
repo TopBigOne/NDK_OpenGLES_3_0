@@ -13,6 +13,13 @@
 
 void RenderP010Sample::LoadImage(NativeImage *pImage)
 {
+	LoadP010FromFile();
+
+	//YUVP010Example::YUVP010Test();
+}
+
+bool RenderP010Sample::LoadP010FromFile()
+{
 	NativeImageUtil::FreeNativeImage(&m_RenderImage);
 	if(m_RenderImage.ppPlane[0] == nullptr) {
 		m_RenderImage.width = 4406;
@@ -20,9 +27,14 @@ void RenderP010Sample::LoadImage(NativeImage *pImage)
 		m_RenderImage.format = IMAGE_FORMAT_P010;
 		NativeImageUtil::AllocNativeImage(&m_RenderImage);
 	}
-	NativeImageUtil::LoadNativeImage(&m_RenderImage, IMAGE_PATH);
-
-	//YUVP010Example::YUVP010Test();
+	if (!NativeImageUtil::LoadNativeImage(&m_RenderImage, IMAGE_PATH))
+	{
+		// 读取失败时缓冲内容是未初始化的 malloc 内存，不能拿去上传纹理
+		LOGCATE("RenderP010Sample::LoadP010FromFile load %s fail", IMAGE_PATH);
+		NativeImageUtil::FreeNativeImage(&m_RenderImage);
+		return false;
+	}
+	return true;
 }
 
 bool RenderP010Sample::Init()
@@ -85,7 +97,10 @@ bool RenderP010Sample::Init()
 	m_yTextureId = textureIds[0];
 	m_uvTextureId = textureIds[1];
 
-	LoadImage(nullptr);
+	if (!LoadP010FromFile())
+	{
+		return false;
+	}
 
 	//upload Y plane data
 	glBindTexture(GL_TEXTURE_2D, m_yTextureId);

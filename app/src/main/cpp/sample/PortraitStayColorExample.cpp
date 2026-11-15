@@ -17,7 +17,11 @@ PortraitStayColorExample::PortraitStayColorExample()
 	m_MVPMatLoc = GL_NONE;
 
 	m_TextureId = GL_NONE;
+	// 原来没有初始化，Init 失败时 Destroy 会拿垃圾值去删除
+	m_GrayTexId = GL_NONE;
+	m_MappingTexId = GL_NONE;
 	m_VaoId = GL_NONE;
+	for (int i = 0; i < 3; ++i) m_VboIds[i] = GL_NONE;
 
 	m_AngleX = 0;
 	m_AngleY = 0;

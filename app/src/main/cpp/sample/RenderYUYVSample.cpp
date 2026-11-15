@@ -92,6 +92,9 @@ bool RenderYUYVSample::Init()
 
 	//upload Y plane data
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
+	// 对齐方式必须在上传之前设置：原来只在 Draw 里设置，晚于这里的上传。
+	// YUYV 行宽为 width*2 字节，width 为奇数时不是 4 的倍数。
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glTexImage2D ( GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, m_RenderImage.width, m_RenderImage.height, 0,
 				   GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);
 
@@ -100,13 +103,13 @@ bool RenderYUYVSample::Init()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4); // 恢复默认值，避免影响后续上传
 	return true;
 }
 
 void RenderYUYVSample::Draw(int screenW, int screenH)
 {
 	LOGCATV("RenderYUYVSample::Draw()");
-	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 	if(m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
 
 	GLfloat verticesCoords[] = {

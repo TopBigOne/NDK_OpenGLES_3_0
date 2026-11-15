@@ -8,6 +8,8 @@
 
 #include <GLUtils.h>
 #include <vector>
+#include <string>
+#include <cstdlib>
 #include "BinaryProgramExample.h"
 
 #define VERTEX_POS_INDX  0
@@ -125,28 +127,47 @@ bool BinaryProgramExample::Init()
 	// 编译链接用于离屏渲染的着色器程序
 	m_FboProgramObj = GLUtils::CreateProgram(vShaderStr, fFboShaderStr, m_FboVertexShader, m_FboFragmentShader);
 
-	if(programBinaryFormats > GL_NONE) {
+	// 只有源码编译成功、且驱动支持二进制格式时才演示“导出 -> 重新加载”。
+	// 原实现不检查任何返回值：文件打开失败时仍去加载（可能读到上次运行残留的旧文件并覆盖、泄漏
+	// 已编译的 program），二进制加载失败时 program 直接变成 0。现在只有完整写入成功后才尝试加载，
+	// 加载成功才替换编译出的 program，否则继续使用编译版本（二进制缓存只是优化，不能影响功能）。
+	if(programBinaryFormats > GL_NONE && m_ProgramObj != GL_NONE) {
         GLint length = 0;
         glGetProgramiv(m_ProgramObj, GL_PROGRAM_BINARY_LENGTH, &length);
 
-        std::vector<unsigned char> buffer(length);
-        GLenum format = 0;
-        glGetProgramBinary(m_ProgramObj, length, nullptr, &format, buffer.data());
+        if (length > 0) {
+            std::vector<unsigned char> buffer(static_cast<size_t>(length));
+            GLsizei binaryLength = 0;
+            GLenum format = 0;
+            glGetProgramBinary(m_ProgramObj, length, &binaryLength, &format, buffer.data());
 
-        ///sdcard/Android/data/com.byteflow.app/files/Download/shader_program.bin_format_34624
-        char binaryFilePath[256] = {0};
-        sprintf(binaryFilePath, "%s/shader_program.bin_format_%d", DEFAULT_OGL_ASSETS_DIR, format);
-        FILE *fp = fopen(binaryFilePath, "wb");
-        LOGCATD("BinaryProgramExample fp=%p, file=%s, binFormat=%d", fp, binaryFilePath, format);
-        if(fp) {
-            fwrite(buffer.data(), length, 1, fp);
-            fclose(fp);
+            ///sdcard/Android/data/com.byteflow.app/files/Download/shader_program.bin_format_34624
+            char binaryFilePath[256] = {0};
+            snprintf(binaryFilePath, sizeof(binaryFilePath), "%s/shader_program.bin_format_%d", DEFAULT_OGL_ASSETS_DIR, format);
 
-            //删除 program 重新加载
-            GLUtils::DeleteProgram(m_ProgramObj);
+            bool written = false;
+            FILE *fp = binaryLength > 0 ? fopen(binaryFilePath, "wb") : nullptr;
+            LOGCATD("BinaryProgramExample fp=%p, file=%s, binFormat=%d, binLen=%d", fp, binaryFilePath, format, binaryLength);
+            if (fp) {
+                size_t count = fwrite(buffer.data(), static_cast<size_t>(binaryLength), 1, fp);
+                // fclose 也可能因为缓冲区回写失败而出错，两者都成功才算写入完成
+                written = (fclose(fp) == 0) && count == 1;
+            }
+
+            if (written) {
+                GLuint binaryProgram = GL_NONE;
+                LoadBinary2Program(&binaryProgram, binaryFilePath);
+                if (binaryProgram != GL_NONE) {
+                    // 二进制加载成功，用它替换编译出的 program
+                    GLUtils::DeleteProgram(m_ProgramObj);
+                    m_ProgramObj = binaryProgram;
+                } else {
+                    LOGCATE("BinaryProgramExample::Init load binary fail, fallback to compiled program");
+                }
+            } else {
+                LOGCATE("BinaryProgramExample::Init write binary fail, file=%s", binaryFilePath);
+            }
         }
-
-        LoadBinary2Program(&m_ProgramObj, binaryFilePath);
 	}
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
@@ -234,35 +255,63 @@ bool BinaryProgramExample::Init()
 }
 
 void BinaryProgramExample::LoadBinary2Program(GLuint *pProgram, char *binFilePath) {
+	// 失败时 *pProgram 保持 GL_NONE，由调用方决定回退策略
+	*pProgram = GL_NONE;
+
+	// 二进制格式编码在文件名后缀 "format_<N>" 中；找不到或解析失败时不能交给 std::stoi
+	// （npos + 7 会越界、非数字会抛异常），直接放弃加载
+	std::string path(binFilePath);
+	size_t pos = path.rfind("format_");
+	if (pos == std::string::npos) {
+		LOGCATE("BinaryProgramExample LoadBinary2Program no format in path=%s", binFilePath);
+		return;
+	}
+	const char *pFormatStr = path.c_str() + pos + 7;
+	char *pEnd = nullptr;
+	long format = strtol(pFormatStr, &pEnd, 10);
+	if (pEnd == pFormatStr || *pEnd != '\0' || format <= 0) {
+		LOGCATE("BinaryProgramExample LoadBinary2Program invalid format in path=%s", binFilePath);
+		return;
+	}
+
 	FILE *fp = fopen(binFilePath, "rb");
 	LOGCATD("BinaryProgramExample LoadBinary2Program fp=%p, file=%s", fp, binFilePath);
-	if(fp) {
-		fseek(fp, 0L, SEEK_END);
-		int size = ftell(fp);
-		rewind(fp);
-		unsigned char *buffer = new unsigned char[size];
-		fread(buffer, size, 1, fp);
-		fclose(fp);
+	if (fp == nullptr) return;
 
-		*pProgram = glCreateProgram();
-		std::string path(binFilePath);
-		int pos = path.find("format_");
-		std::string strFormat = path.substr(pos + 7);
-		int format = std::stoi(strFormat);
-		LOGCATD("BinaryProgramExample format=%d", format);
-		glProgramBinary(*pProgram, format, buffer, size);
-
-		//检查是否加载成功
-		GLint status;
-		glGetProgramiv(*pProgram, GL_LINK_STATUS, &status);
-		if(GL_FALSE == status) {
-			//加载失败
-			LOGCATE("BinaryProgramExample glProgramBinary fail.");
-			GLUtils::DeleteProgram(*pProgram);
-		}
-
-		delete[] buffer;
+	// ftell 失败返回 -1，文件为空时也没有可加载的内容
+	long size = -1;
+	if (fseek(fp, 0L, SEEK_END) == 0) {
+		size = ftell(fp);
 	}
+	if (size <= 0) {
+		LOGCATE("BinaryProgramExample LoadBinary2Program invalid file size=%ld", size);
+		fclose(fp);
+		return;
+	}
+	rewind(fp);
+
+	std::vector<unsigned char> buffer(static_cast<size_t>(size));
+	size_t count = fread(buffer.data(), static_cast<size_t>(size), 1, fp);
+	fclose(fp);
+	if (count != 1) {
+		LOGCATE("BinaryProgramExample LoadBinary2Program read fail, size=%ld", size);
+		return;
+	}
+
+	LOGCATD("BinaryProgramExample format=%ld", format);
+	GLuint program = glCreateProgram();
+	if (program == GL_NONE) return;
+	glProgramBinary(program, static_cast<GLenum>(format), buffer.data(), static_cast<GLsizei>(size));
+
+	//检查是否加载成功（驱动升级等原因都会导致旧的二进制不可用）
+	GLint status = GL_FALSE;
+	glGetProgramiv(program, GL_LINK_STATUS, &status);
+	if(GL_FALSE == status) {
+		LOGCATE("BinaryProgramExample glProgramBinary fail.");
+		GLUtils::DeleteProgram(program);
+		return;
+	}
+	*pProgram = program;
 }
 
 
@@ -347,6 +396,9 @@ bool BinaryProgramExample::CreateFrameBufferObj()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImage.width, m_RenderImage.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER)!= GL_FRAMEBUFFER_COMPLETE) {
 		LOGCATE("BinaryProgramExample::CreateFrameBufferObj glCheckFramebufferStatus status != GL_FRAMEBUFFER_COMPLETE");
+		// 失败路径同样恢复默认绑定，避免把未完成的 FBO 留作当前绘制目标
+		glBindTexture(GL_TEXTURE_2D, GL_NONE);
+		glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
 		return false;
 	}
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
