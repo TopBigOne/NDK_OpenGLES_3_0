@@ -66,13 +66,10 @@ TimeTunnelSample::~TimeTunnelSample()
 // 加载图像数据
 void TimeTunnelSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATD("TimeTunnelSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
+		LOGCATD("TimeTunnelSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 		// 复制图像的宽度、高度、格式和数据
-		m_RenderImage.width = pImage->width;
-		m_RenderImage.height = pImage->height;
-		m_RenderImage.format = pImage->format;
 		NativeImageUtil::CopyNativeImage(pImage, &m_RenderImage);
 	}
 }

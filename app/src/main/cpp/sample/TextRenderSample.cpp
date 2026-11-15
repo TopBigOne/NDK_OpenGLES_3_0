@@ -150,13 +150,10 @@ bool TextRenderSample::Init()
  */
 void TextRenderSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATD("TextRenderSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
+		LOGCATD("TextRenderSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 		// 复制图像尺寸和格式信息
-		m_RenderImage.width = pImage->width;
-		m_RenderImage.height = pImage->height;
-		m_RenderImage.format = pImage->format;
 		// 深拷贝图像数据
 		NativeImageUtil::CopyNativeImage(pImage, &m_RenderImage);
 	}

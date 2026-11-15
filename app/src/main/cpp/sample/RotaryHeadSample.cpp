@@ -132,13 +132,10 @@ bool RotaryHeadSample::Init()
 
 void RotaryHeadSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATD("RotaryHeadSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
+        LOGCATD("RotaryHeadSample::LoadImage pImage = %p", pImage->ppPlane[0]);
         ScopedSyncLock lock(&m_Lock);
-		m_RenderImage.width = pImage->width;
-		m_RenderImage.height = pImage->height;
-		m_RenderImage.format = pImage->format;
 		NativeImageUtil::CopyNativeImage(pImage, &m_RenderImage);
 	}
 

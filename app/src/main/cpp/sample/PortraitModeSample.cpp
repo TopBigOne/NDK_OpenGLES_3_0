@@ -37,12 +37,9 @@ PortraitModeSample::~PortraitModeSample()
 void PortraitModeSample::LoadMultiImageWithIndex(int index, NativeImage *pImage)
 {
 	GLSampleBase::LoadMultiImageWithIndex(index, pImage);
-	LOGCATD("PortraitModeSample::LoadImage index=%d, pImage = %p", index, pImage->ppPlane[0]);
 	if (pImage)
 	{
-		m_RenderImages[index].width = pImage->width;
-		m_RenderImages[index].height = pImage->height;
-		m_RenderImages[index].format = pImage->format;
+		LOGCATD("PortraitModeSample::LoadImage index=%d, pImage = %p", index, pImage->ppPlane[0]);
 		NativeImageUtil::CopyNativeImage(pImage, &m_RenderImages[index]);
 	}
 }

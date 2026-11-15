@@ -191,13 +191,10 @@ bool FBOBlitSample::Init()
 // 加载图像数据
 void FBOBlitSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATD("FBOBlitSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
+		LOGCATD("FBOBlitSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 		// 复制图像元数据
-		m_RenderImage.width = pImage->width;
-		m_RenderImage.height = pImage->height;
-		m_RenderImage.format = pImage->format;
 		// 复制图像数据
 		NativeImageUtil::CopyNativeImage(pImage, &m_RenderImage);
 	}

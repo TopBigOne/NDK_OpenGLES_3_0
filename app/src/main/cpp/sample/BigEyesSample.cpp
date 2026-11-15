@@ -188,13 +188,10 @@ bool BigEyesSample::Init()
 
 void BigEyesSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATD("BigEyesSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
+	    LOGCATD("BigEyesSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	    ScopedSyncLock lock(&m_Lock);
-		m_RenderImage.width = pImage->width;
-		m_RenderImage.height = pImage->height;
-		m_RenderImage.format = pImage->format;
 		NativeImageUtil::CopyNativeImage(pImage, &m_RenderImage);
 	}
 

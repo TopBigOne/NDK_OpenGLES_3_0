@@ -166,6 +166,7 @@ bool BezierCurveSample::Init() {
 }
 
 void BezierCurveSample::LoadImage(NativeImage *pImage) {
+    if (pImage == nullptr) return;  // 先判空再访问，原来日志里先解引用了 pImage
     LOGCATD("BezierCurveSample::LoadImage pImage = %p", pImage->ppPlane[0]);
     if (m_pCoordSystemSample != nullptr) {
         m_pCoordSystemSample->LoadImage(pImage);

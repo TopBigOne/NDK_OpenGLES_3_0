@@ -188,11 +188,8 @@ bool ConveyorBeltExample::Init()
 
 void ConveyorBeltExample::LoadImage(NativeImage *pImage)
 {
-    LOGCATD("ConveyorBeltExample::LoadImage pImage = %p,[w=%d,h=%d,f=%d]", pImage->ppPlane[0], pImage->width, pImage->height, pImage->format);
     if(pImage) {
-        m_RenderImage.width = pImage->width;
-        m_RenderImage.height = pImage->height;
-        m_RenderImage.format = pImage->format;
+        LOGCATD("ConveyorBeltExample::LoadImage pImage = %p,[w=%d,h=%d,f=%d]", pImage->ppPlane[0], pImage->width, pImage->height, pImage->format);
         NativeImageUtil::CopyNativeImage(pImage, &m_RenderImage);
 	}
 }
@@ -303,5 +300,6 @@ void ConveyorBeltExample::UpdateTransformMatrix(float rotateX, float rotateY, fl
 }
 
 void ConveyorBeltExample::LoadMultiImageWithIndex(int index, NativeImage *pImage) {
+	if (pImage == nullptr) return;  // 先判空再访问，原来日志里先解引用了 pImage
 	LOGCATD("ConveyorBeltExample::LoadMultiImageWithIndex pImage = %p,[w=%d,h=%d,f=%d]", pImage->ppPlane[0], pImage->width, pImage->height, pImage->format);
 }

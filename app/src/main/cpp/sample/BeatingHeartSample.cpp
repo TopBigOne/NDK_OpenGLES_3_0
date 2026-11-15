@@ -201,13 +201,10 @@ bool BeatingHeartSample::Init()
 
 void BeatingHeartSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATD("BeatingHeartSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
+		LOGCATD("BeatingHeartSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 		// 复制图像数据（本示例未使用）
-		m_RenderImage.width = pImage->width;
-		m_RenderImage.height = pImage->height;
-		m_RenderImage.format = pImage->format;
 		NativeImageUtil::CopyNativeImage(pImage, &m_RenderImage);
 	}
 }

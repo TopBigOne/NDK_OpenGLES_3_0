@@ -175,12 +175,9 @@ bool DepthTestingSample::Init()
 
 void DepthTestingSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATD("DepthTestingSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
-		m_RenderImage.width = pImage->width;
-		m_RenderImage.height = pImage->height;
-		m_RenderImage.format = pImage->format;
+		LOGCATD("DepthTestingSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 		NativeImageUtil::CopyNativeImage(pImage, &m_RenderImage);
 	}
 

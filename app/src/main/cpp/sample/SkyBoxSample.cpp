@@ -301,12 +301,9 @@ bool SkyBoxSample::Init()
  */
 void SkyBoxSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATD("SkyBoxSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
-		m_RenderImage.width = pImage->width;
-		m_RenderImage.height = pImage->height;
-		m_RenderImage.format = pImage->format;
+		LOGCATD("SkyBoxSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 		NativeImageUtil::CopyNativeImage(pImage, &m_RenderImage);
 	}
 
@@ -319,18 +316,15 @@ void SkyBoxSample::LoadImage(NativeImage *pImage)
  */
 void SkyBoxSample::LoadMultiImageWithIndex(int index, NativeImage *pImage)
 {
-	LOGCATD("SkyBoxSample::LoadMultiImageWithIndex pImage = %p, index=%d", pImage->ppPlane[0], index);
 	if (pImage)
 	{
+		LOGCATD("SkyBoxSample::LoadMultiImageWithIndex pImage = %p, index=%d", pImage->ppPlane[0], index);
 		// 如果该索引已有图像，先释放
 		if(m_pSkyBoxRenderImg[index].ppPlane[0])
 		{
 			NativeImageUtil::FreeNativeImage(&m_pSkyBoxRenderImg[index]);
 		}
 
-		m_pSkyBoxRenderImg[index].width = pImage->width;
-		m_pSkyBoxRenderImg[index].height = pImage->height;
-		m_pSkyBoxRenderImg[index].format = pImage->format;
 		NativeImageUtil::CopyNativeImage(pImage, &m_pSkyBoxRenderImg[index]);
 	}
 }

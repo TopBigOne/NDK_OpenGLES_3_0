@@ -236,12 +236,9 @@ bool BasicLightingSample::Init()
  */
 void BasicLightingSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATD("BasicLightingSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
-		m_RenderImage.width = pImage->width;
-		m_RenderImage.height = pImage->height;
-		m_RenderImage.format = pImage->format;
+		LOGCATD("BasicLightingSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 		NativeImageUtil::CopyNativeImage(pImage, &m_RenderImage);  // 拷贝图像数据
 	}
 

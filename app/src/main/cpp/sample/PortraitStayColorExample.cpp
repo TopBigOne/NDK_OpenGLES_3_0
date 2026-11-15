@@ -185,12 +185,9 @@ bool PortraitStayColorExample::Init()
 
 void PortraitStayColorExample::LoadImage(NativeImage *pImage)
 {
-	LOGCATD("PortraitStayColorExample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
-		m_RenderImage.width = pImage->width;
-		m_RenderImage.height = pImage->height;
-		m_RenderImage.format = pImage->format;
+		LOGCATD("PortraitStayColorExample::LoadImage pImage = %p", pImage->ppPlane[0]);
 		NativeImageUtil::CopyNativeImage(pImage, &m_RenderImage);
 	}
 
@@ -297,21 +294,15 @@ void PortraitStayColorExample::UpdateTransformMatrix(float rotateX, float rotate
 }
 
 void PortraitStayColorExample::LoadMultiImageWithIndex(int index, NativeImage *pImage) {
-	LOGCATD("PortraitStayColorExample::LoadMultiImageWithIndex pImage = %p,[w=%d,h=%d,f=%d]", pImage->ppPlane[0], pImage->width, pImage->height, pImage->format);
 	if (pImage)
 	{
+        LOGCATD("PortraitStayColorExample::LoadMultiImageWithIndex pImage = %p,[w=%d,h=%d,f=%d]", pImage->ppPlane[0], pImage->width, pImage->height, pImage->format);
         switch (index) {
             case 0:
-                m_GrayImage.width = pImage->width;
-                m_GrayImage.height = pImage->height;
-                m_GrayImage.format = pImage->format;
                 NativeImageUtil::CopyNativeImage(pImage, &m_GrayImage);
                 //NativeImageUtil::DumpNativeImage(&m_GrayImage, "/sdcard/DCIM", "PortraitStayColorExample");
                 break;
             case 1:
-				m_MappingImage.width = pImage->width;
-				m_MappingImage.height = pImage->height;
-				m_MappingImage.format = pImage->format;
 				NativeImageUtil::CopyNativeImage(pImage, &m_MappingImage);
                 break;
         }

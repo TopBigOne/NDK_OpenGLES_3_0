@@ -207,6 +207,7 @@ bool GLTransitionExample_4::Init()
 
 void GLTransitionExample_4::LoadImage(NativeImage *pImage)
 {
+	if (pImage == nullptr) return;  // 先判空再访问，原来日志里先解引用了 pImage
 	LOGCATD("GLTransitionExample_4::LoadImage pImage = %p", pImage->ppPlane[0]);
 }
 
@@ -299,12 +300,10 @@ void GLTransitionExample_4::UpdateTransformMatrix(float rotateX, float rotateY, 
 }
 
 void GLTransitionExample_4::LoadMultiImageWithIndex(int index, NativeImage *pImage) {
+	if (pImage == nullptr) return;  // 先判空再访问，原来日志里先解引用了 pImage
 	LOGCATD("GLTransitionExample_4::LoadMultiImageWithIndex pImage = %p,[w=%d,h=%d,f=%d]", pImage->ppPlane[0], pImage->width, pImage->height, pImage->format);
 	if (pImage && index >=0 && index < BF_IMG_NUM)
 	{
-		m_RenderImages[index].width = pImage->width;
-		m_RenderImages[index].height = pImage->height;
-		m_RenderImages[index].format = pImage->format;
 		NativeImageUtil::CopyNativeImage(pImage, &m_RenderImages[index]);
 		//NativeImageUtil::DumpNativeImage(&m_GrayImage, "/sdcard/DCIM", "GLTransitionExample_4");
     }

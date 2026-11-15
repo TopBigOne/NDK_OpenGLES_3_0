@@ -366,21 +366,9 @@ void MyGLRenderContext::SetImageDataWithIndex(int index, int format, int width, 
 	nativeImage.format = format;
 	nativeImage.width = width;
 	nativeImage.height = height;
-	nativeImage.ppPlane[0] = pData;
-
-	switch (format)
-	{
-		case IMAGE_FORMAT_NV12:
-		case IMAGE_FORMAT_NV21:
-			nativeImage.ppPlane[1] = nativeImage.ppPlane[0] + width * height;
-			break;
-		case IMAGE_FORMAT_I420:
-			nativeImage.ppPlane[1] = nativeImage.ppPlane[0] + width * height;
-			nativeImage.ppPlane[2] = nativeImage.ppPlane[1] + width * height / 4;
-			break;
-		default:
-			break;
-	}
+	// Java 传入的是一整块连续内存，按格式统一计算各平面指针
+	// （原来只处理了 NV12/NV21/I420，I444/P010 的次级平面为空）
+	NativeImageUtil::AttachContiguousPlanes(&nativeImage, pData);
 
 	std::lock_guard<std::mutex> lock(m_Mutex);
 	if (m_pCurSample)
@@ -397,21 +385,9 @@ void MyGLRenderContext::SetImageData(int format, int width, int height, uint8_t 
 	nativeImage.format = format;
 	nativeImage.width = width;
 	nativeImage.height = height;
-	nativeImage.ppPlane[0] = pData;
-
-	switch (format)
-	{
-		case IMAGE_FORMAT_NV12:
-		case IMAGE_FORMAT_NV21:
-			nativeImage.ppPlane[1] = nativeImage.ppPlane[0] + width * height;
-			break;
-		case IMAGE_FORMAT_I420:
-			nativeImage.ppPlane[1] = nativeImage.ppPlane[0] + width * height;
-			nativeImage.ppPlane[2] = nativeImage.ppPlane[1] + width * height / 4;
-			break;
-		default:
-			break;
-	}
+	// Java 传入的是一整块连续内存，按格式统一计算各平面指针
+	// （原来只处理了 NV12/NV21/I420，I444/P010 的次级平面为空）
+	NativeImageUtil::AttachContiguousPlanes(&nativeImage, pData);
 
 	std::lock_guard<std::mutex> lock(m_Mutex);
 	if (m_pCurSample)
