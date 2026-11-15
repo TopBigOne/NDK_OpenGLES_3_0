@@ -374,6 +374,7 @@ void MyGLRenderContext::SetImageDataWithIndex(int index, int format, int width, 
 	if (m_pCurSample)
 	{
 		m_pCurSample->LoadMultiImageWithIndex(index, &nativeImage);
+		m_pCurSample->OnInputDataChanged();
 	}
 
 }
@@ -393,6 +394,7 @@ void MyGLRenderContext::SetImageData(int format, int width, int height, uint8_t 
 	if (m_pCurSample)
 	{
 		m_pCurSample->LoadImage(&nativeImage);
+		m_pCurSample->OnInputDataChanged();
 	}
 
 }

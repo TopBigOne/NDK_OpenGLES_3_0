@@ -212,6 +212,21 @@ public:
 	}
 
 	/**
+	 * @brief 输入数据（图像等）发生变化，由框架在 LoadImage 系列调用之后调用
+	 * @details 有些示例在图像尚未加载时 Init 返回 false。图像缺失不是确定性错误，
+	 *          如果图像晚于 GL 上下文到达，要给初始化一次重试机会，否则示例会一直黑屏。
+	 *          FAILED 状态下资源已经被 Destroy 清理过，直接回到 UNINITIALIZED 是安全的。
+	 *          调用方必须与 RenderFrame 互斥（MyGLRenderContext 的锁保证）。
+	 */
+	void OnInputDataChanged()
+	{
+		if (m_GLState == GL_STATE_FAILED)
+		{
+			m_GLState = GL_STATE_UNINITIALIZED;
+		}
+	}
+
+	/**
 	 * @brief 资源所属的上下文已经失效：丢弃句柄但不调用 glDelete*，下一帧重新 Init
 	 */
 	void OnGLContextLost()
