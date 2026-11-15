@@ -130,7 +130,7 @@ void BigHeadSample::Init()
 
 void BigHeadSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("BigHeadSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("BigHeadSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
         ScopedSyncLock lock(&m_Lock);
@@ -144,7 +144,7 @@ void BigHeadSample::LoadImage(NativeImage *pImage)
 
 void BigHeadSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("BigHeadSample::Draw() [w,h]=[%d,%d]", screenW, screenH);
+	LOGCATV("BigHeadSample::Draw() [w,h]=[%d,%d]", screenW, screenH);
 
 	if(m_ProgramObj == GL_NONE) return;
 
@@ -215,7 +215,7 @@ void BigHeadSample::Destroy()
  * */
 void BigHeadSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("BigHeadSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("BigHeadSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 	angleX = angleX % 360;
 	angleY = angleY % 360;
 
@@ -267,7 +267,7 @@ void BigHeadSample::CalculateMesh(float warpLevel) {
 		vec2 inputPoint(KEY_POINTS[i * 2] / m_RenderImage.width, KEY_POINTS[i * 2 + 1] / m_RenderImage.height);
 		m_KeyPoints[i] = WarpKeyPoint(inputPoint, centerPoint, warpLevel);
 		m_KeyPointsInts[i] = CalculateIntersection(inputPoint, centerPoint);
-		LOGCATE("BigHeadSample::CalculateMesh index=%d, input[x,y]=[%f, %f], interscet[x, y]=[%f, %f]", i,
+		LOGCATV("BigHeadSample::CalculateMesh index=%d, input[x,y]=[%f, %f], interscet[x, y]=[%f, %f]", i,
 				m_KeyPoints[i].x, m_KeyPoints[i].y, m_KeyPointsInts[i].x, m_KeyPointsInts[i].y);
 	}
 
@@ -329,7 +329,7 @@ void BigHeadSample::CalculateMesh(float warpLevel) {
     m_TexCoords[31 * 3 + 2] = m_KeyPointsInts[0];
 
 	for (int i = 0; i < TRIANGLE_COUNT * 3; ++i) {
-		//LOGCATE("m_TexCoords[%d]=(%f, %f)", i, m_TexCoords[i].x, m_TexCoords[i].y);
+		//LOGCATV("m_TexCoords[%d]=(%f, %f)", i, m_TexCoords[i].x, m_TexCoords[i].y);
 		m_Vertices[i] = vec3( m_TexCoords[i].x * 2 - 1, 1 - 2 * m_TexCoords[i].y, 0);
 	}
 }

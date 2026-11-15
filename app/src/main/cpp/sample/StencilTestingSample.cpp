@@ -243,7 +243,7 @@ void StencilTestingSample::Init()
 
 void StencilTestingSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("StencilTestingSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("StencilTestingSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -256,7 +256,7 @@ void StencilTestingSample::LoadImage(NativeImage *pImage)
 
 void StencilTestingSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("StencilTestingSample::Draw()");
+	LOGCATV("StencilTestingSample::Draw()");
 
 	if (m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
 
@@ -342,7 +342,7 @@ void StencilTestingSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int
 
 void StencilTestingSample::UpdateMatrix(glm::mat4 &mvpMatrix, glm::mat4 &modelMatrix, int angleXRotate, int angleYRotate, float scale, glm::vec3 transVec3, float ratio)
 {
-	LOGCATE("StencilTestingSample::UpdateMatrix angleX = %d, angleY = %d, ratio = %f", angleXRotate,
+	LOGCATV("StencilTestingSample::UpdateMatrix angleX = %d, angleY = %d, ratio = %f", angleXRotate,
 			angleYRotate, ratio);
 	angleXRotate = angleXRotate % 360;
 	angleYRotate = angleYRotate % 360;

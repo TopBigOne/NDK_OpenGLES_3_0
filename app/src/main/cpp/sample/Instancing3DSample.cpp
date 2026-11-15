@@ -261,7 +261,7 @@ void Instancing3DSample::Init()
 
 void Instancing3DSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("Instancing3DSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("Instancing3DSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -274,7 +274,7 @@ void Instancing3DSample::LoadImage(NativeImage *pImage)
 
 void Instancing3DSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("Instancing3DSample::Draw()");
+	LOGCATV("Instancing3DSample::Draw()");
 
 	if (m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
 	glEnable(GL_DEPTH_TEST);
@@ -337,7 +337,7 @@ void Instancing3DSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int a
 
 void Instancing3DSample::UpdateMatrix(glm::mat4 &mvpMatrix, glm::mat4 &modelMatrix, int angleXRotate, int angleYRotate, float scale, glm::vec3 transVec3, float ratio)
 {
-	LOGCATE("Instancing3DSample::UpdateMatrix angleX = %d, angleY = %d, ratio = %f", angleXRotate,
+	LOGCATV("Instancing3DSample::UpdateMatrix angleX = %d, angleY = %d, ratio = %f", angleXRotate,
 			angleYRotate, ratio);
 	angleXRotate = angleXRotate % 360;
 	angleYRotate = angleYRotate % 360;

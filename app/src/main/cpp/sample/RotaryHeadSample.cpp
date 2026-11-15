@@ -130,7 +130,7 @@ void RotaryHeadSample::Init()
 
 void RotaryHeadSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("RotaryHeadSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("RotaryHeadSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
         ScopedSyncLock lock(&m_Lock);
@@ -144,7 +144,7 @@ void RotaryHeadSample::LoadImage(NativeImage *pImage)
 
 void RotaryHeadSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("RotaryHeadSample::Draw() [w,h]=[%d,%d]", screenW, screenH);
+	LOGCATV("RotaryHeadSample::Draw() [w,h]=[%d,%d]", screenW, screenH);
 
 	if(m_ProgramObj == GL_NONE) return;
 
@@ -213,7 +213,7 @@ void RotaryHeadSample::Destroy()
  * */
 void RotaryHeadSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("RotaryHeadSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("RotaryHeadSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 	angleX = angleX % 360;
 	angleY = angleY % 360;
 
@@ -265,7 +265,7 @@ void RotaryHeadSample::CalculateMesh(float rotaryAngle) {
 		//inputPoint = RotaryKeyPoint(inputPoint, rotaryAngle);
 		m_KeyPoints[i] = RotaryKeyPoint(inputPoint, rotaryAngle);;
 		m_KeyPointsInts[i] = CalculateIntersection(inputPoint, centerPoint);
-		LOGCATE("RotaryHeadSample::CalculateMesh index=%d, input[x,y]=[%f, %f], interscet[x, y]=[%f, %f]", i,
+		LOGCATV("RotaryHeadSample::CalculateMesh index=%d, input[x,y]=[%f, %f], interscet[x, y]=[%f, %f]", i,
 				m_KeyPoints[i].x, m_KeyPoints[i].y, m_KeyPointsInts[i].x, m_KeyPointsInts[i].y);
 	}
 
@@ -327,7 +327,7 @@ void RotaryHeadSample::CalculateMesh(float rotaryAngle) {
     m_TexCoords[31 * 3 + 2] = m_KeyPointsInts[0];
 
 	for (int i = 0; i < TRIANGLE_COUNT * 3; ++i) {
-		//LOGCATE("m_TexCoords[%d]=(%f, %f)", i, m_TexCoords[i].x, m_TexCoords[i].y);
+		//LOGCATV("m_TexCoords[%d]=(%f, %f)", i, m_TexCoords[i].x, m_TexCoords[i].y);
 		m_Vertices[i] = vec3( m_TexCoords[i].x * 2 - 1, 1 - 2 * m_TexCoords[i].y, 0);
 	}
 }

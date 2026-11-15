@@ -35,7 +35,7 @@ BinaryProgramExample::~BinaryProgramExample()
 
 void BinaryProgramExample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("BinaryProgramExample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("BinaryProgramExample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -117,7 +117,7 @@ void BinaryProgramExample::Init()
     if(programBinaryFormats <= GL_NONE) {
         //不支持获取二进制 program, game over
     }
-	LOGCATE("BinaryProgramExample programBinaryFormats=%d", programBinaryFormats);
+	LOGCATD("BinaryProgramExample programBinaryFormats=%d", programBinaryFormats);
 
 	// 编译链接用于普通渲染的着色器程序
 	m_ProgramObj = GLUtils::CreateProgram(vShaderStr, fShaderStr, m_VertexShader, m_FragmentShader);
@@ -137,7 +137,7 @@ void BinaryProgramExample::Init()
         char binaryFilePath[256] = {0};
         sprintf(binaryFilePath, "%s/shader_program.bin_format_%d", DEFAULT_OGL_ASSETS_DIR, format);
         FILE *fp = fopen(binaryFilePath, "wb");
-        LOGCATE("BinaryProgramExample fp=%p, file=%s, binFormat=%d", fp, binaryFilePath, format);
+        LOGCATD("BinaryProgramExample fp=%p, file=%s, binFormat=%d", fp, binaryFilePath, format);
         if(fp) {
             fwrite(buffer.data(), length, 1, fp);
             fclose(fp);
@@ -152,7 +152,7 @@ void BinaryProgramExample::Init()
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATE("BinaryProgramExample::Init m_ProgramObj == GL_NONE");
+		LOGCATD("BinaryProgramExample::Init m_ProgramObj == GL_NONE");
 		return;
 	}
 	m_SamplerLoc = glGetUniformLocation(m_ProgramObj, "s_TextureMap");
@@ -236,7 +236,7 @@ void BinaryProgramExample::Init()
 
 void BinaryProgramExample::LoadBinary2Program(GLuint *pProgram, char *binFilePath) {
 	FILE *fp = fopen(binFilePath, "rb");
-	LOGCATE("BinaryProgramExample LoadBinary2Program fp=%p, file=%s", fp, binFilePath);
+	LOGCATD("BinaryProgramExample LoadBinary2Program fp=%p, file=%s", fp, binFilePath);
 	if(fp) {
 		fseek(fp, 0L, SEEK_END);
 		int size = ftell(fp);
@@ -250,7 +250,7 @@ void BinaryProgramExample::LoadBinary2Program(GLuint *pProgram, char *binFilePat
 		int pos = path.find("format_");
 		std::string strFormat = path.substr(pos + 7);
 		int format = std::stoi(strFormat);
-		LOGCATE("BinaryProgramExample format=%d", format);
+		LOGCATD("BinaryProgramExample format=%d", format);
 		glProgramBinary(*pProgram, format, buffer, size);
 
 		//检查是否加载成功

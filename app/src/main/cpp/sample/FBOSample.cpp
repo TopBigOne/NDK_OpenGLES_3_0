@@ -68,7 +68,7 @@ FBOSample::~FBOSample()
  */
 void FBOSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("FBOSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("FBOSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -165,7 +165,7 @@ void FBOSample::Init()
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATE("FBOSample::Init m_ProgramObj == GL_NONE");
+		LOGCATD("FBOSample::Init m_ProgramObj == GL_NONE");
 		return;
 	}
 

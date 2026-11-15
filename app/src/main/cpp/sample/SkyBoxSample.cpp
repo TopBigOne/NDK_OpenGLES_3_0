@@ -301,7 +301,7 @@ void SkyBoxSample::Init()
  */
 void SkyBoxSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("SkyBoxSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("SkyBoxSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -319,7 +319,7 @@ void SkyBoxSample::LoadImage(NativeImage *pImage)
  */
 void SkyBoxSample::LoadMultiImageWithIndex(int index, NativeImage *pImage)
 {
-	LOGCATE("SkyBoxSample::LoadMultiImageWithIndex pImage = %p, index=%d", pImage->ppPlane[0], index);
+	LOGCATD("SkyBoxSample::LoadMultiImageWithIndex pImage = %p, index=%d", pImage->ppPlane[0], index);
 	if (pImage)
 	{
 		// 如果该索引已有图像，先释放
@@ -341,7 +341,7 @@ void SkyBoxSample::LoadMultiImageWithIndex(int index, NativeImage *pImage)
  */
 void SkyBoxSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("SkyBoxSample::Draw()");
+	LOGCATV("SkyBoxSample::Draw()");
 
 	if (m_ProgramObj == GL_NONE) return;
 	glEnable(GL_DEPTH_TEST);  // 启用深度测试
@@ -432,7 +432,7 @@ void SkyBoxSample::Destroy()
  * */
 void SkyBoxSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float scale, float ratio)
 {
-	LOGCATE("SkyBoxSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX,
+	LOGCATV("SkyBoxSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX,
 			angleY, ratio);
 	angleX = angleX % 360;
 	angleY = angleY % 360;

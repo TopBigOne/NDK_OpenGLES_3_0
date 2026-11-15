@@ -188,7 +188,7 @@ void ConveyorBeltExample::Init()
 
 void ConveyorBeltExample::LoadImage(NativeImage *pImage)
 {
-    LOGCATE("ConveyorBeltExample::LoadImage pImage = %p,[w=%d,h=%d,f=%d]", pImage->ppPlane[0], pImage->width, pImage->height, pImage->format);
+    LOGCATD("ConveyorBeltExample::LoadImage pImage = %p,[w=%d,h=%d,f=%d]", pImage->ppPlane[0], pImage->width, pImage->height, pImage->format);
     if(pImage) {
         m_RenderImage.width = pImage->width;
         m_RenderImage.height = pImage->height;
@@ -199,7 +199,7 @@ void ConveyorBeltExample::LoadImage(NativeImage *pImage)
 
 void ConveyorBeltExample::Draw(int screenW, int screenH)
 {
-	LOGCATE("ConveyorBeltExample::Draw()");
+	LOGCATV("ConveyorBeltExample::Draw()");
 
 	if(m_ProgramObj == GL_NONE || m_TextureIds[0] == GL_NONE) return;
 
@@ -258,7 +258,7 @@ void ConveyorBeltExample::Destroy()
 
 void ConveyorBeltExample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("ConveyorBeltExample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("ConveyorBeltExample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 	angleX = angleX % 360;
 	angleY = angleY % 360;
 
@@ -300,5 +300,5 @@ void ConveyorBeltExample::UpdateTransformMatrix(float rotateX, float rotateY, fl
 }
 
 void ConveyorBeltExample::LoadMultiImageWithIndex(int index, NativeImage *pImage) {
-	LOGCATE("ConveyorBeltExample::LoadMultiImageWithIndex pImage = %p,[w=%d,h=%d,f=%d]", pImage->ppPlane[0], pImage->width, pImage->height, pImage->format);
+	LOGCATD("ConveyorBeltExample::LoadMultiImageWithIndex pImage = %p,[w=%d,h=%d,f=%d]", pImage->ppPlane[0], pImage->width, pImage->height, pImage->format);
 }

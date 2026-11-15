@@ -43,6 +43,13 @@ add_library( # Sets the name of the library.
              ${src-files}
         )
 
+# 日志分级（util/LogUtil.h）依赖 NDEBUG 区分 Debug/Release：LOGCATD/LOGCATV、耗时统计宏和
+# GO_CHECK_GL_ERROR 在定义了 NDEBUG 时会被编译掉。NDK 工具链的 Release/RelWithDebInfo 配置
+# 已经带 -DNDEBUG，这里再显式兜底一次，避免以后换工具链或自定义构建类型时把逐帧日志带进线上包。
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(native-render PRIVATE NDEBUG)
+endif()
+
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by
 # default, you only need to specify the name of the public NDK library

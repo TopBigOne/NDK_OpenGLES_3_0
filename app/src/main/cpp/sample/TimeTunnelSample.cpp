@@ -66,7 +66,7 @@ TimeTunnelSample::~TimeTunnelSample()
 // 加载图像数据
 void TimeTunnelSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("TimeTunnelSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("TimeTunnelSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		// 复制图像的宽度、高度、格式和数据
@@ -206,7 +206,7 @@ void TimeTunnelSample::Init()
 	// 检查着色器程序是否创建成功
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATE("TimeTunnelSample::Init m_ProgramObj == GL_NONE");
+		LOGCATD("TimeTunnelSample::Init m_ProgramObj == GL_NONE");
 		return;
 	}
 	// 获取普通渲染程序的 uniform 变量位置
@@ -475,7 +475,7 @@ bool TimeTunnelSample::CreateFrameBufferObj()
  */
 void TimeTunnelSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-    LOGCATE("TimeTunnelSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+    LOGCATV("TimeTunnelSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
     // 将角度限制在 0-360 度范围内
     angleX = angleX % 360;
     angleY = angleY % 360;

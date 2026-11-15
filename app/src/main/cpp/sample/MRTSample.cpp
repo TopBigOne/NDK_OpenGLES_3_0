@@ -176,13 +176,13 @@ void MRTSample::Init()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImage.width, m_RenderImage.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
 
-	LOGCATE("MRTSample::Init InitFBO = %d", InitFBO());
+	LOGCATD("MRTSample::Init InitFBO = %d", InitFBO());
 
 }
 
 void MRTSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("MRTSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("MRTSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -194,7 +194,7 @@ void MRTSample::LoadImage(NativeImage *pImage)
 
 void MRTSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("MRTSample::Draw()");
+	LOGCATV("MRTSample::Draw()");
 	m_SurfaceWidth = screenW;
 	m_SurfaceHeight = screenH;
 
@@ -261,7 +261,7 @@ void MRTSample::Destroy()
  * */
 void MRTSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("MRTSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("MRTSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 	angleX = angleX % 360;
 	angleY = angleY % 360;
 

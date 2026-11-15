@@ -335,7 +335,7 @@ EGLRender::~EGLRender()
 
 void EGLRender::Init()
 {
-	LOGCATE("EGLRender::Init");
+	LOGCATD("EGLRender::Init");
 	if (CreateGlesEnv() == 0)
 	{
 		m_IsGLContextReady = true;
@@ -468,7 +468,7 @@ int EGLRender::CreateGlesEnv()
 			break;
 		}
 
-		LOGCATE("EGLRender::CreateGlesEnv EGL init with version %d.%d", eglMajVers, eglMinVers);
+		LOGCATD("EGLRender::CreateGlesEnv EGL init with version %d.%d", eglMajVers, eglMinVers);
 
 		//3. 获取 EGLConfig 对象，确定渲染表面的配置信息
 		if(!eglChooseConfig(m_eglDisplay, confAttr, &m_eglConf, 1, &numConfigs))
@@ -486,7 +486,7 @@ int EGLRender::CreateGlesEnv()
 			{
 				case EGL_BAD_ALLOC:
 					// Not enough resources available. Handle and recover
-					LOGCATE("EGLRender::CreateGlesEnv Not enough resources available");
+					LOGCATD("EGLRender::CreateGlesEnv Not enough resources available");
 					break;
 				case EGL_BAD_CONFIG:
 					// Verify that provided EGLConfig is valid
@@ -500,7 +500,7 @@ int EGLRender::CreateGlesEnv()
 				case EGL_BAD_MATCH:
 					// Check window and EGLConfig attributes to determine
 					// compatibility and pbuffer-texture parameters
-					LOGCATE("EGLRender::CreateGlesEnv Check window and EGLConfig attributes");
+					LOGCATD("EGLRender::CreateGlesEnv Check window and EGLConfig attributes");
 					break;
 			}
 		}
@@ -513,7 +513,7 @@ int EGLRender::CreateGlesEnv()
 			if(error == EGL_BAD_CONFIG)
 			{
 				// Handle error and recover
-				LOGCATE("EGLRender::CreateGlesEnv EGL_BAD_CONFIG");
+				LOGCATD("EGLRender::CreateGlesEnv EGL_BAD_CONFIG");
 				resultCode = -1;
 				break;
 			}
@@ -526,7 +526,7 @@ int EGLRender::CreateGlesEnv()
 			resultCode = -1;
 			break;
 		}
-		LOGCATE("EGLRender::CreateGlesEnv initialize success!");
+		LOGCATD("EGLRender::CreateGlesEnv initialize success!");
 	}
 	while (false);
 
@@ -540,7 +540,7 @@ int EGLRender::CreateGlesEnv()
 
 void EGLRender::SetImageData(uint8_t *pData, int width, int height)
 {
-	LOGCATE("EGLRender::SetImageData pData = %p, [w,h] = [%d, %d]", pData, width, height);
+	LOGCATD("EGLRender::SetImageData pData = %p, [w,h] = [%d, %d]", pData, width, height);
 
 	if (pData && m_IsGLContextReady)
 	{
@@ -581,7 +581,7 @@ void EGLRender::SetImageData(uint8_t *pData, int width, int height)
 
 void EGLRender::SetIntParams(int paramType, int param)
 {
-	LOGCATE("EGLRender::SetIntParams paramType = %d, param = %d", paramType, param);
+	LOGCATD("EGLRender::SetIntParams paramType = %d, param = %d", paramType, param);
 	switch (paramType)
 	{
 		case PARAM_TYPE_SHADER_INDEX:
@@ -620,7 +620,7 @@ void EGLRender::SetIntParams(int paramType, int param)
 
 void EGLRender::Draw()
 {
-	LOGCATE("EGLRender::Draw");
+	LOGCATV("EGLRender::Draw");
 	if (m_ProgramObj == GL_NONE) return;
 	glViewport(0, 0, m_RenderImage.width, m_RenderImage.height);
 
@@ -655,7 +655,7 @@ void EGLRender::Draw()
 
 void EGLRender::UnInit()
 {
-	LOGCATE("EGLRender::UnInit");
+	LOGCATD("EGLRender::UnInit");
 	if (m_ProgramObj)
 	{
 		glDeleteProgram(m_ProgramObj);

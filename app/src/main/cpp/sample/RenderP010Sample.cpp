@@ -106,7 +106,7 @@ void RenderP010Sample::Init()
 
 void RenderP010Sample::Draw(int screenW, int screenH)
 {
-	LOGCATE("RenderP010Sample::Draw()");
+	LOGCATV("RenderP010Sample::Draw()");
 
 	if(m_ProgramObj == GL_NONE || m_yTextureId == GL_NONE) return;
 

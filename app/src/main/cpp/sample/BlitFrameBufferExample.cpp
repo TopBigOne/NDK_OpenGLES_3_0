@@ -34,7 +34,7 @@ BlitFrameBufferExample::~BlitFrameBufferExample()
 
 void BlitFrameBufferExample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("BlitFrameBufferExample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("BlitFrameBufferExample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -118,7 +118,7 @@ void BlitFrameBufferExample::Init()
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATE("BlitFrameBufferExample::Init m_ProgramObj == GL_NONE");
+		LOGCATD("BlitFrameBufferExample::Init m_ProgramObj == GL_NONE");
 		return;
 	}
 	m_SamplerLoc = glGetUniformLocation(m_ProgramObj, "s_TextureMap");

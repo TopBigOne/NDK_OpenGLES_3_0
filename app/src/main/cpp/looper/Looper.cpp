@@ -87,7 +87,7 @@ void Looper::addMessage(LooperMessage *msg, bool flush) {
     } else {
         head = msg;
     }
-    LOGCATE("Looper::addMessage msg->what=%d", msg->what);
+    LOGCATV("Looper::addMessage msg->what=%d", msg->what);
     sem_post(&headWriteProtect);
     sem_post(&headDataAvailable);
 }
@@ -101,7 +101,7 @@ void Looper::loop() {
         sem_wait(&headWriteProtect);
         LooperMessage *msg = head;
         if (msg == NULL) {
-            LOGCATE("Looper::loop() no msg");
+            LOGCATV("Looper::loop() no msg");
             sem_post(&headWriteProtect);
             continue;
         }
@@ -109,18 +109,18 @@ void Looper::loop() {
         sem_post(&headWriteProtect);
 
         if (msg->quit) {
-            LOGCATE("Looper::loop() quitting");
+            LOGCATV("Looper::loop() quitting");
             delete msg;
             return;
         }
-        LOGCATE("Looper::loop() processing msg.what=%d", msg->what);
+        LOGCATV("Looper::loop() processing msg.what=%d", msg->what);
         handleMessage(msg);
         delete msg;
     }
 }
 
 void Looper::quit() {
-    LOGCATE("Looper::quit()");
+    LOGCATD("Looper::quit()");
     LooperMessage *msg = new LooperMessage();
     msg->what = 0;
     msg->obj = NULL;
@@ -135,5 +135,5 @@ void Looper::quit() {
 }
 
 void Looper::handleMessage(LooperMessage *msg) {
-    LOGCATE("Looper::handleMessage [what, obj]=[%d, %p]", msg->what, msg->obj);
+    LOGCATV("Looper::handleMessage [what, obj]=[%d, %p]", msg->what, msg->obj);
 }

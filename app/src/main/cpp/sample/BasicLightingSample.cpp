@@ -238,7 +238,7 @@ void BasicLightingSample::Init()
  */
 void BasicLightingSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("BasicLightingSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("BasicLightingSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -256,7 +256,7 @@ void BasicLightingSample::LoadImage(NativeImage *pImage)
  */
 void BasicLightingSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("BasicLightingSample::Draw()");
+	LOGCATV("BasicLightingSample::Draw()");
 
 	// 确保着色器程序和纹理已创建
 	if (m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
@@ -319,7 +319,7 @@ void BasicLightingSample::Destroy()
  * */
 void BasicLightingSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("BasicLightingSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX,
+	LOGCATV("BasicLightingSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX,
 			angleY, ratio);
 	angleX = angleX % 360;                                                    // 限制角度在 0-360 度范围内
 	angleY = angleY % 360;

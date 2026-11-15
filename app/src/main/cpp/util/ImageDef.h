@@ -250,7 +250,7 @@ public:
 
 		FILE *fp = fopen(imgPath, "wb");
 
-		LOGCATE("DumpNativeImage fp=%p, file=%s", fp, imgPath);
+		LOGCATD("DumpNativeImage fp=%p, file=%s", fp, imgPath);
 
 		if(fp)
 		{
@@ -319,7 +319,7 @@ public:
 				{
 					fwrite(pSrcImg->ppPlane[0],
 						   static_cast<size_t>(pSrcImg->width * pSrcImg->height), 1, fp);
-					LOGCATE("DumpNativeImage default");
+					LOGCATD("DumpNativeImage default");
 					break;
 				}
 			}
@@ -334,7 +334,7 @@ public:
 		if (pSrcImg == nullptr || pPath == nullptr) return;
 
 		FILE *fp = fopen(pPath, "rb");
-		LOGCATE("LoadNativeImage fp=%p, file=%s", fp, pPath);
+		LOGCATD("LoadNativeImage fp=%p, file=%s", fp, pPath);
 		int dataSize = 0;
 		if(fp)
 		{

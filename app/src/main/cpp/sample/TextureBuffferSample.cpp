@@ -154,7 +154,7 @@ void TextureBufferSample::Init()
 
 void TextureBufferSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("TextureBufferSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("TextureBufferSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -167,13 +167,13 @@ void TextureBufferSample::LoadImage(NativeImage *pImage)
 
 void TextureBufferSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("TextureBufferSample::Draw()");
+	LOGCATV("TextureBufferSample::Draw()");
     int maxVertexUniform, maxFragmentUniform, maxVarying, maxVextexAttri;
     glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &maxVertexUniform);
     glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &maxFragmentUniform);
     glGetIntegerv(GL_MAX_VARYING_COMPONENTS, &maxVarying);
     glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxVextexAttri);
-    LOGCATE("TextureBufferSample:: MaxVertexUniform=%d, MaxFragUniform=%d, maxVarying=%d, maxVextexAttri=%d", maxVertexUniform, maxFragmentUniform, maxVarying, maxVextexAttri);
+    LOGCATV("TextureBufferSample:: MaxVertexUniform=%d, MaxFragUniform=%d, maxVarying=%d, maxVextexAttri=%d", maxVertexUniform, maxFragmentUniform, maxVarying, maxVextexAttri);
 
     if(m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
 
@@ -221,7 +221,7 @@ void TextureBufferSample::Destroy()
  * */
 void TextureBufferSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("TextureBufferSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("TextureBufferSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 	angleX = angleX % 360;
 	angleY = angleY % 360;
 

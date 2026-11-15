@@ -71,7 +71,7 @@ void FullScreenTriangleSample::Init()
 
 void FullScreenTriangleSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("FullScreenTriangleSample::Draw()");
+	LOGCATV("FullScreenTriangleSample::Draw()");
 
 	if(m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
 
@@ -89,7 +89,7 @@ void FullScreenTriangleSample::Draw(int screenW, int screenH)
 
 void FullScreenTriangleSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("FullScreenTriangleSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("FullScreenTriangleSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;

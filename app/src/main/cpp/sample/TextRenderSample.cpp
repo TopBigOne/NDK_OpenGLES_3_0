@@ -153,7 +153,7 @@ void TextRenderSample::Init()
  */
 void TextRenderSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("TextRenderSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("TextRenderSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		// 复制图像尺寸和格式信息
@@ -175,7 +175,7 @@ void TextRenderSample::Draw(int screenW, int screenH)
 {
 	m_SurfaceWidth = screenW;
 	m_SurfaceHeight = screenH;
-	LOGCATE("TextRenderSample::Draw()");
+	LOGCATV("TextRenderSample::Draw()");
 	if(m_ProgramObj == GL_NONE) return;
 
 	// 设置清屏颜色为白色
@@ -258,7 +258,7 @@ void TextRenderSample::RenderText(std::string text, GLfloat x, GLfloat y, GLfloa
 		w /= viewport.x;
 		h /= viewport.y;
 
-		LOGCATE("TextRenderSample::RenderText [xpos,ypos,w,h]=[%f, %f, %f, %f], ch.advance >> 6 = %d", xpos, ypos, w, h, ch.advance >> 6);
+		LOGCATV("TextRenderSample::RenderText [xpos,ypos,w,h]=[%f, %f, %f, %f], ch.advance >> 6 = %d", xpos, ypos, w, h, ch.advance >> 6);
 
 		// 构建当前字符的顶点数据（2个三角形组成矩形）
 		// 每个顶点包含：位置坐标(x,y) + 纹理坐标(s,t)
@@ -345,7 +345,7 @@ void TextRenderSample::LoadFacesByASCII() {
 				GL_UNSIGNED_BYTE,
 				face->glyph->bitmap.buffer
 		);
-        LOGCATE("TextRenderSample::LoadFacesByASCII [w,h,buffer]=[%d, %d, %p], ch.advance >> 6 = %ld", face->glyph->bitmap.width,face->glyph->bitmap.rows, face->glyph->bitmap.buffer,face->glyph->advance.x >> 6);
+        LOGCATD("TextRenderSample::LoadFacesByASCII [w,h,buffer]=[%d, %d, %p], ch.advance >> 6 = %ld", face->glyph->bitmap.width,face->glyph->bitmap.rows, face->glyph->bitmap.buffer,face->glyph->advance.x >> 6);
 
 		// 设置纹理参数
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -430,7 +430,7 @@ void TextRenderSample::LoadFacesByUnicode(const wchar_t* text, int size) {
 				bitmap.buffer
 		);
 
-		LOGCATE("TextRenderSample::LoadFacesByUnicode text[i]=%d [w,h,buffer]=[%d, %d, %p], advance.x=%ld", text[i], bitmap.width, bitmap.rows, bitmap.buffer, glyph->advance.x / MAX_SHORT_VALUE);
+		LOGCATD("TextRenderSample::LoadFacesByUnicode text[i]=%d [w,h,buffer]=[%d, %d, %p], advance.x=%ld", text[i], bitmap.width, bitmap.rows, bitmap.buffer, glyph->advance.x / MAX_SHORT_VALUE);
 
 		// 设置纹理参数
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -488,7 +488,7 @@ void TextRenderSample::Destroy()
  * */
 void TextRenderSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("TextRenderSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("TextRenderSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 	angleX = angleX % 360;
 	angleY = angleY % 360;
 
@@ -565,7 +565,7 @@ void TextRenderSample::RenderText(const wchar_t *text, int textLen, GLfloat x, G
 		w /= viewport.x;
 		h /= viewport.y;
 
-		LOGCATE("TextRenderSample::RenderText [xpos,ypos,w,h]=[%f, %f, %f, %f]", xpos, ypos, w, h);
+		LOGCATV("TextRenderSample::RenderText [xpos,ypos,w,h]=[%f, %f, %f, %f]", xpos, ypos, w, h);
 
 		// 构建当前字符的顶点数据
 		GLfloat vertices[6][4] = {

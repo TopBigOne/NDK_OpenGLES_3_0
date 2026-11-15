@@ -83,7 +83,7 @@ GLuint GLUtils::CreateProgram(const char *pVertexShaderSource, const char *pFrag
             }
         }
     FUN_END_TIME("GLUtils::CreateProgram")
-    LOGCATE("GLUtils::CreateProgram program = %d", program);
+    LOGCATD("GLUtils::CreateProgram program = %d", program);
 	return program;
 }
 
@@ -138,7 +138,7 @@ GLuint GLUtils::CreateProgramWithFeedback(const char *pVertexShaderSource, const
             }
         }
     FUN_END_TIME("GLUtils::CreateProgramWithFeedback")
-    LOGCATE("GLUtils::CreateProgramWithFeedback program = %d", program);
+    LOGCATD("GLUtils::CreateProgramWithFeedback program = %d", program);
     return program;
 }
 
@@ -194,13 +194,13 @@ GLuint GLUtils::CreateProgramWithGeometryShader(const char *pVertexShaderSource,
             }
         }
     FUN_END_TIME("GLUtils::CreateProgramWithGeometryShader")
-    LOGCATE("GLUtils::CreateProgramWithGeometryShader program = %d", program);
+    LOGCATD("GLUtils::CreateProgramWithGeometryShader program = %d", program);
     return program;
 }
 
 void GLUtils::DeleteProgram(GLuint &program)
 {
-    LOGCATE("GLUtils::DeleteProgram");
+    LOGCATD("GLUtils::DeleteProgram");
     if (program)
     {
         glUseProgram(0);
@@ -224,7 +224,7 @@ GLuint GLUtils::CreateProgram(const char *pVertexShaderSource, const char *pFrag
 }
 
 GLuint GLUtils::LoadComputeShader(const char* computeShaderSource) {
-    LOGCATE("GLUtils::LoadComputeShader Compute shader: %s", computeShaderSource);
+    LOGCATD("GLUtils::LoadComputeShader Compute shader: %s", computeShaderSource);
     GLuint computeShader = glCreateShader(GL_COMPUTE_SHADER);
     glShaderSource(computeShader, 1, &computeShaderSource, NULL);
     glCompileShader(computeShader);

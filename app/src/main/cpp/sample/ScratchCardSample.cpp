@@ -140,7 +140,7 @@ void ScratchCardSample::Init() {
 }
 
 void ScratchCardSample::LoadImage(NativeImage *pImage) {
-    LOGCATE("ScratchCardSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+    LOGCATD("ScratchCardSample::LoadImage pImage = %p", pImage->ppPlane[0]);
     if (pImage) {
         m_RenderImage.width = pImage->width;
         m_RenderImage.height = pImage->height;
@@ -151,7 +151,7 @@ void ScratchCardSample::LoadImage(NativeImage *pImage) {
 }
 
 void ScratchCardSample::Draw(int screenW, int screenH) {
-    LOGCATE("ScratchCardSample::Draw()");
+    LOGCATV("ScratchCardSample::Draw()");
     m_SurfaceWidth = screenW;
     m_SurfaceHeight = screenH;
     glClearColor(0.2f, 0.2f, 0.2f, 1.0);
@@ -237,7 +237,7 @@ void ScratchCardSample::Destroy() {
  * @param ratio 宽高比
  * */
 void ScratchCardSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio) {
-    LOGCATE("ScratchCardSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX,
+    LOGCATV("ScratchCardSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX,
             angleY, ratio);
     angleX = angleX % 360;
     angleY = angleY % 360;

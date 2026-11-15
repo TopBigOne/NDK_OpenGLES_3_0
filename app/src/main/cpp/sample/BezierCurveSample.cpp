@@ -168,14 +168,14 @@ void BezierCurveSample::Init() {
 }
 
 void BezierCurveSample::LoadImage(NativeImage *pImage) {
-    LOGCATE("BezierCurveSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+    LOGCATD("BezierCurveSample::LoadImage pImage = %p", pImage->ppPlane[0]);
     if (m_pCoordSystemSample != nullptr) {
         m_pCoordSystemSample->LoadImage(pImage);
     }
 }
 
 void BezierCurveSample::Draw(int screenW, int screenH) {
-    LOGCATE("BezierCurveSample::Draw()");
+    LOGCATV("BezierCurveSample::Draw()");
 
     if (m_pCoordSystemSample != nullptr) {
         //m_pCoordSystemSample->Draw(screenW, screenH);
@@ -309,7 +309,7 @@ void BezierCurveSample::Destroy() {
  * @param ratio 宽高比
  * */
 void BezierCurveSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio) {
-    LOGCATE("BezierCurveSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX,
+    LOGCATV("BezierCurveSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX,
             angleY, ratio);
     angleX = angleX % 360;
     angleY = angleY % 360;

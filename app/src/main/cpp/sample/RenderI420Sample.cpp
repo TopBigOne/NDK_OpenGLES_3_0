@@ -29,7 +29,7 @@
  */
 void RenderI420Sample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("RenderI420Sample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("RenderI420Sample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -161,7 +161,7 @@ void RenderI420Sample::Init()
  */
 void RenderI420Sample::Draw(int screenW, int screenH)
 {
-	LOGCATE("RenderI420Sample::Draw()");
+	LOGCATV("RenderI420Sample::Draw()");
 	// 设置像素对齐方式为 1 字节 (处理非 4 字节对齐的数据)
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 	if(m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;

@@ -201,7 +201,7 @@ void BeatingHeartSample::Init()
 
 void BeatingHeartSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("BeatingHeartSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("BeatingHeartSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		// 复制图像数据（本示例未使用）
@@ -214,7 +214,7 @@ void BeatingHeartSample::LoadImage(NativeImage *pImage)
 
 void BeatingHeartSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("BeatingHeartSample::Draw()");
+	LOGCATV("BeatingHeartSample::Draw()");
 
 	if(m_ProgramObj == GL_NONE) return;
 
@@ -232,7 +232,7 @@ void BeatingHeartSample::Draw(int screenW, int screenH)
 	// 获取当前时间，模2000ms后归一化到[0,1]
 	// fmod用于循环播放动画
 	float time = static_cast<float>(fmod(GetSysCurrentTime(), 2000) / 2000);
-    LOGCATE("BeatingHeartSample::Draw() time=%f",time);
+    LOGCATV("BeatingHeartSample::Draw() time=%f",time);
 	glUniform1f(m_TimeLoc, time);
 
 	// 传递屏幕尺寸，用于归一化坐标
@@ -263,7 +263,7 @@ void BeatingHeartSample::Destroy()
  */
 void BeatingHeartSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("BeatingHeartSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("BeatingHeartSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 	// 角度归一化到[0, 360)
 	angleX = angleX % 360;
 	angleY = angleY % 360;

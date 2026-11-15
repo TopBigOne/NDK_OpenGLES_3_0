@@ -32,7 +32,7 @@ PortraitModeSample::~PortraitModeSample()
 void PortraitModeSample::LoadMultiImageWithIndex(int index, NativeImage *pImage)
 {
 	GLSampleBase::LoadMultiImageWithIndex(index, pImage);
-	LOGCATE("PortraitModeSample::LoadImage index=%d, pImage = %p", index, pImage->ppPlane[0]);
+	LOGCATD("PortraitModeSample::LoadImage index=%d, pImage = %p", index, pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImages[index].width = pImage->width;
@@ -101,7 +101,7 @@ void PortraitModeSample::Init()
 	m_FastGaussianBlurProgramObj = GLUtils::CreateProgram(vShaderStr, fFastGaussianBlurStr);
 	if (m_ProgramObj == GL_NONE)
 	{
-		LOGCATE("PortraitModeSample::Init m_ProgramObj == GL_NONE");
+		LOGCATD("PortraitModeSample::Init m_ProgramObj == GL_NONE");
 		return;
 	}
 
@@ -192,7 +192,7 @@ void PortraitModeSample::Init()
 
 void PortraitModeSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("PortraitModeSample::Draw");
+	LOGCATV("PortraitModeSample::Draw");
 	RenderToFrameBuffer(m_FastGaussianBlurProgramObj, m_SrcTexId, m_FboTextureId);
 	RenderToFrameBuffer(m_CircleBokehProgramObj, m_FboTextureId, m_SrcTexId);
 
@@ -276,7 +276,7 @@ bool PortraitModeSample::CreateFrameBufferObj()
 }
 
 int PortraitModeSample::RenderToFrameBuffer(GLuint program, GLuint srcTexId, GLuint dstTexId) {
-	LOGCATE("PortraitModeSample::RenderToFrameBuffer [program=%d, srcTexId=%d, dstTexId=%d]", program, srcTexId, dstTexId);
+	LOGCATV("PortraitModeSample::RenderToFrameBuffer [program=%d, srcTexId=%d, dstTexId=%d]", program, srcTexId, dstTexId);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FboId);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dstTexId, 0);

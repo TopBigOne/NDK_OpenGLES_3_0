@@ -23,21 +23,21 @@ void GLRenderLooper::handleMessage(LooperMessage *msg) {
     Looper::handleMessage(msg);
     switch (msg->what) {
         case MSG_SurfaceCreated: {
-            LOGCATE("GLRenderLooper::handleMessage MSG_SurfaceCreated");
+            LOGCATV("GLRenderLooper::handleMessage MSG_SurfaceCreated");
             m_GLEnv = (GLEnv *)msg->obj;
             OnSurfaceCreated();
         }
             break;
         case MSG_SurfaceChanged:
-            LOGCATE("GLRenderLooper::handleMessage MSG_SurfaceChanged");
+            LOGCATV("GLRenderLooper::handleMessage MSG_SurfaceChanged");
             OnSurfaceChanged(msg->arg1, msg->arg2);
             break;
         case MSG_DrawFrame:
-            LOGCATE("GLRenderLooper::handleMessage MSG_DrawFrame");
+            LOGCATV("GLRenderLooper::handleMessage MSG_DrawFrame");
             OnDrawFrame();
             break;
         case MSG_SurfaceDestroyed:
-            LOGCATE("GLRenderLooper::handleMessage MSG_SurfaceDestroyed");
+            LOGCATV("GLRenderLooper::handleMessage MSG_SurfaceDestroyed");
             OnSurfaceDestroyed();
             break;
         default:
@@ -46,7 +46,7 @@ void GLRenderLooper::handleMessage(LooperMessage *msg) {
 }
 
 GLRenderLooper *GLRenderLooper::GetInstance() {
-    LOGCATE("GLRenderLooper::GetInstance");
+    LOGCATV("GLRenderLooper::GetInstance");
     if(m_Instance == nullptr) {
         unique_lock<mutex> lock(m_Mutex);
         if(m_Instance == nullptr) {
@@ -58,7 +58,7 @@ GLRenderLooper *GLRenderLooper::GetInstance() {
 }
 
 void GLRenderLooper::ReleaseInstance() {
-    LOGCATE("GLRenderLooper::GetInstance");
+    LOGCATV("GLRenderLooper::GetInstance");
     if(m_Instance != nullptr) {
         unique_lock<mutex> lock(m_Mutex);
         if(m_Instance != nullptr) {
@@ -69,7 +69,7 @@ void GLRenderLooper::ReleaseInstance() {
 }
 
 void GLRenderLooper::OnSurfaceCreated() {
-    LOGCATE("GLRenderLooper::OnSurfaceCreated");
+    LOGCATD("GLRenderLooper::OnSurfaceCreated");
     m_EglCore = new EglCore(m_GLEnv->sharedCtx, FLAG_RECORDABLE);
     SizeF imgSizeF = m_GLEnv->imgSize;
     m_OffscreenSurface = new OffscreenSurface(m_EglCore, imgSizeF.width, imgSizeF.height);
@@ -99,11 +99,11 @@ void GLRenderLooper::OnSurfaceCreated() {
 }
 
 void GLRenderLooper::OnSurfaceChanged(int w, int h) {
-    LOGCATE("GLRenderLooper::OnSurfaceChanged [w,h]=[%d, %d]", w, h);
+    LOGCATD("GLRenderLooper::OnSurfaceChanged [w,h]=[%d, %d]", w, h);
 }
 
 void GLRenderLooper::OnDrawFrame() {
-    LOGCATE("GLRenderLooper::OnDrawFrame");
+    LOGCATV("GLRenderLooper::OnDrawFrame");
     SizeF imgSizeF = m_GLEnv->imgSize;
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_FboId);
@@ -126,7 +126,7 @@ void GLRenderLooper::OnDrawFrame() {
 }
 
 void GLRenderLooper::OnSurfaceDestroyed() {
-    LOGCATE("GLRenderLooper::OnSurfaceDestroyed");
+    LOGCATD("GLRenderLooper::OnSurfaceDestroyed");
     m_GLEnv->renderDone(m_GLEnv->callbackCtx, m_FboTextureId);
 
     if (m_VaoId)

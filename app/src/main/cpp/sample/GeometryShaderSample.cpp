@@ -122,7 +122,7 @@ void GeometryShaderSample::Init()
 
 void GeometryShaderSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("GeometryShaderSample::Draw()");
+	LOGCATV("GeometryShaderSample::Draw()");
 
 	if(m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
 
@@ -146,7 +146,7 @@ void GeometryShaderSample::Draw(int screenW, int screenH)
 
 void GeometryShaderSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("GeometryShaderSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("GeometryShaderSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;

@@ -159,7 +159,7 @@ void Model3DSample::Init()
  */
 void Model3DSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("Model3DSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("Model3DSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 
 }
 
@@ -172,7 +172,7 @@ void Model3DSample::LoadImage(NativeImage *pImage)
 void Model3DSample::Draw(int screenW, int screenH)
 {
 	if(m_pModel == nullptr || m_pShader == nullptr) return;
-    LOGCATE("Model3DSample::Draw()");
+    LOGCATV("Model3DSample::Draw()");
 
     // 设置背景色为灰色并清除颜色和深度缓冲区
     glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
@@ -202,7 +202,7 @@ void Model3DSample::Draw(int screenW, int screenH)
  */
 void Model3DSample::Destroy()
 {
-    LOGCATE("Model3DSample::Destroy");
+    LOGCATD("Model3DSample::Destroy");
     if (m_pModel != nullptr) {
         m_pModel->Destroy();
         delete m_pModel;
@@ -227,7 +227,7 @@ void Model3DSample::Destroy()
  */
 void Model3DSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("Model3DSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("Model3DSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 	angleX = angleX % 360;  // 角度归一化到 [0, 360) 范围
 	angleY = angleY % 360;
 

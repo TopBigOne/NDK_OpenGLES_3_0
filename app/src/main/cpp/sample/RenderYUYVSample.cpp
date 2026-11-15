@@ -11,7 +11,7 @@
 
 void RenderYUYVSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("RenderYUYVSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("RenderYUYVSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -102,7 +102,7 @@ void RenderYUYVSample::Init()
 
 void RenderYUYVSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("RenderYUYVSample::Draw()");
+	LOGCATV("RenderYUYVSample::Draw()");
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 	if(m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
 

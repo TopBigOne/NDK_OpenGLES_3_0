@@ -297,7 +297,7 @@ void MultiLightsSample::Init()
  */
 void MultiLightsSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("MultiLightsSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("MultiLightsSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -315,7 +315,7 @@ void MultiLightsSample::LoadImage(NativeImage *pImage)
  */
 void MultiLightsSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("MultiLightsSample::Draw()");
+	LOGCATV("MultiLightsSample::Draw()");
 
 	// 确保着色器程序和纹理已创建
 	if (m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
@@ -402,7 +402,7 @@ void MultiLightsSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int an
  */
 void MultiLightsSample::UpdateMatrix(glm::mat4 &mvpMatrix, glm::mat4 &modelMatrix, int angleXRotate, int angleYRotate, float scale, glm::vec3 transVec3, float ratio)
 {
-	LOGCATE("MultiLightsSample::UpdateMatrix angleX = %d, angleY = %d, ratio = %f", angleXRotate,
+	LOGCATV("MultiLightsSample::UpdateMatrix angleX = %d, angleY = %d, ratio = %f", angleXRotate,
 			angleYRotate, ratio);
 	angleXRotate = angleXRotate % 360;                                        // 限制角度在 0-360 度范围内
 	angleYRotate = angleYRotate % 360;

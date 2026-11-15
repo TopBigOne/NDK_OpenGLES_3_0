@@ -163,14 +163,14 @@ void GeometryShader3Sample::Init()
 
 void GeometryShader3Sample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("GeometryShader3Sample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("GeometryShader3Sample::LoadImage pImage = %p", pImage->ppPlane[0]);
 
 }
 
 void GeometryShader3Sample::Draw(int screenW, int screenH)
 {
 	if(m_pModel == nullptr || m_pShader == nullptr) return;
-    LOGCATE("GeometryShader3Sample::Draw()");
+    LOGCATV("GeometryShader3Sample::Draw()");
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
@@ -197,7 +197,7 @@ void GeometryShader3Sample::Draw(int screenW, int screenH)
 
 void GeometryShader3Sample::Destroy()
 {
-    LOGCATE("GeometryShader3Sample::Destroy");
+    LOGCATD("GeometryShader3Sample::Destroy");
     if (m_pModel != nullptr) {
         m_pModel->Destroy();
         delete m_pModel;
@@ -219,7 +219,7 @@ void GeometryShader3Sample::Destroy()
 
 void GeometryShader3Sample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("GeometryShader3Sample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("GeometryShader3Sample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 	angleX = angleX % 360;
 	angleY = angleY % 360;
 

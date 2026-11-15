@@ -31,7 +31,7 @@ RGB2YUYVSample::~RGB2YUYVSample()
 
 void RGB2YUYVSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("RGB2YUYVSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("RGB2YUYVSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -148,7 +148,7 @@ void RGB2YUYVSample::Init()
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATE("RGB2YUYVSample::Init m_ProgramObj == GL_NONE");
+		LOGCATD("RGB2YUYVSample::Init m_ProgramObj == GL_NONE");
 		return;
 	}
 	m_SamplerLoc = glGetUniformLocation(m_ProgramObj, "s_TextureMap");

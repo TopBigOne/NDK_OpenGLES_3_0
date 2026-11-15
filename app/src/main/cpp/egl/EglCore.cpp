@@ -33,7 +33,7 @@ EglCore::EglCore(EGLContext sharedContext, int flags) {
 bool EglCore::init(EGLContext sharedContext, int flags) {
     assert(mEGLDisplay == EGL_NO_DISPLAY);
     if (mEGLDisplay != EGL_NO_DISPLAY) {
-        LOGCATE("EGL already set up");
+        LOGCATD("EGL already set up");
         return false;
     }
     if (sharedContext == NULL) {
@@ -93,12 +93,12 @@ bool EglCore::init(EGLContext sharedContext, int flags) {
     eglPresentationTimeANDROID = (EGL_PRESENTATION_TIME_ANDROIDPROC)
             eglGetProcAddress("eglPresentationTimeANDROID");
     if (!eglPresentationTimeANDROID) {
-        LOGCATE("eglPresentationTimeANDROID is not available!");
+        LOGCATD("eglPresentationTimeANDROID is not available!");
     }
 
     int values[1] = {0};
     eglQueryContext(mEGLDisplay, mEGLContext, EGL_CONTEXT_CLIENT_VERSION, values);
-    LOGCATE("EGLContext created, client version %d", values[0]);
+    LOGCATD("EGLContext created, client version %d", values[0]);
 
     return true;
 }
@@ -186,7 +186,7 @@ EGLSurface EglCore::createWindowSurface(ANativeWindow *surface) {
     int surfaceAttribs[] = {
             EGL_NONE
     };
-    LOGCATE("eglCreateWindowSurface start");
+    LOGCATD("eglCreateWindowSurface start");
     EGLSurface eglSurface = eglCreateWindowSurface(mEGLDisplay, mEGLConfig, surface, surfaceAttribs);
     checkEglError("eglCreateWindowSurface");
     assert(eglSurface != NULL);
@@ -212,7 +212,7 @@ EGLSurface EglCore::createOffscreenSurface(int width, int height) {
     EGLSurface eglSurface = eglCreatePbufferSurface(mEGLDisplay, mEGLConfig, surfaceAttribs);
     assert(eglSurface != NULL);
     if (eglSurface == NULL) {
-        LOGCATE("Surface was null");
+        LOGCATD("Surface was null");
         return NULL;
     }
     return eglSurface;
@@ -224,7 +224,7 @@ EGLSurface EglCore::createOffscreenSurface(int width, int height) {
  */
 void EglCore::makeCurrent(EGLSurface eglSurface) {
     if (mEGLDisplay == EGL_NO_DISPLAY) {
-        LOGCATE("Note: makeCurrent w/o display.\n");
+        LOGCATD("Note: makeCurrent w/o display.\n");
     }
     if (!eglMakeCurrent(mEGLDisplay, eglSurface, eglSurface, mEGLContext)) {
         // TODO 抛出异常
@@ -238,7 +238,7 @@ void EglCore::makeCurrent(EGLSurface eglSurface) {
  */
 void EglCore::makeCurrent(EGLSurface drawSurface, EGLSurface readSurface) {
     if (mEGLDisplay == EGL_NO_DISPLAY) {
-        LOGCATE("Note: makeCurrent w/o display.\n");
+        LOGCATD("Note: makeCurrent w/o display.\n");
     }
     if (!eglMakeCurrent(mEGLDisplay, drawSurface, readSurface, mEGLContext)) {
         // TODO 抛出异常

@@ -119,7 +119,7 @@ FBOLegLengthenSample::~FBOLegLengthenSample()
 
 void FBOLegLengthenSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("FBOLegLengthenSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("FBOLegLengthenSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -505,7 +505,7 @@ void FBOLegLengthenSample::Init()
 				glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vHSixPointsBottomFboTexCoors), vHSixPointsBottomFboTexCoors);
 				break;
 			default:
-				LOGCATE("FBOLegLengthenSample::Init don't support this mode");
+				LOGCATD("FBOLegLengthenSample::Init don't support this mode");
 				return;
 		}
 
@@ -582,7 +582,7 @@ void FBOLegLengthenSample::Init()
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATE("FBOLegLengthenSample::Init m_ProgramObj == GL_NONE");
+		LOGCATD("FBOLegLengthenSample::Init m_ProgramObj == GL_NONE");
 		return;
 	}
 	m_SamplerLoc = glGetUniformLocation(m_ProgramObj, "s_TextureMap");
@@ -688,7 +688,7 @@ void FBOLegLengthenSample::Init()
 			break;
 
 		default:
-			LOGCATE("FBOLegLengthenSample::Init don't support this mode");
+			LOGCATD("FBOLegLengthenSample::Init don't support this mode");
 			return;
 	}
 
@@ -754,7 +754,7 @@ void FBOLegLengthenSample::Init()
 
 void FBOLegLengthenSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("FBOLegLengthenSample::Draw [screenW, screenH] = [%d, %d]", screenW, screenH);
+	LOGCATV("FBOLegLengthenSample::Draw [screenW, screenH] = [%d, %d]", screenW, screenH);
 	//纹理就是一个“可以被采样的复杂的数据集合” 纹理作为 GPU 图像数据结构
 	//glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 	if (m_bIsVerticalMode)

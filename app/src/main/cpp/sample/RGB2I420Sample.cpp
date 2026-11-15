@@ -31,7 +31,7 @@ RGB2I420Sample::~RGB2I420Sample()
 
 void RGB2I420Sample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("RGB2I420Sample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("RGB2I420Sample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -197,7 +197,7 @@ void RGB2I420Sample::Init()
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATE("RGB2I420Sample::Init m_ProgramObj == GL_NONE");
+		LOGCATD("RGB2I420Sample::Init m_ProgramObj == GL_NONE");
 		return;
 	}
 	m_SamplerLoc = glGetUniformLocation(m_ProgramObj, "s_TextureMap");

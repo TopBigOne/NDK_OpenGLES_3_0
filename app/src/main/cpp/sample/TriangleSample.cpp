@@ -88,7 +88,7 @@ void TriangleSample::Init()
  */
 void TriangleSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("TriangleSample::Draw");
+	LOGCATV("TriangleSample::Draw");
 
 	// ==================== 定义顶点数据 ====================
 	// 三角形的三个顶点坐标（x, y, z）

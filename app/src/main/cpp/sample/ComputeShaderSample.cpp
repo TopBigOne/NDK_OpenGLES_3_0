@@ -11,7 +11,7 @@
 
 void ComputeShaderSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("ComputeShaderSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("ComputeShaderSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -48,7 +48,7 @@ void ComputeShaderSample::Init()
 
 void ComputeShaderSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("ComputeShaderSample::Draw()");
+	LOGCATV("ComputeShaderSample::Draw()");
 	if(m_ProgramObj == GL_NONE) return;
 
 	// Use the program object
@@ -63,9 +63,9 @@ void ComputeShaderSample::Draw(int screenW, int screenH)
 	// 读取并打印处理后的数据
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_DataBuffer);
 	auto* mappedData = (float*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, m_DataSize, GL_MAP_READ_BIT);
-	LOGCATE("ComputeShaderSample::Draw() Data after compute shader:\n");
+	LOGCATV("ComputeShaderSample::Draw() Data after compute shader:\n");
 	for (int i = 0; i < m_DataSize/ sizeof(float); ++i) {
-		LOGCATE("ComputeShaderSample::Draw() => %f", mappedData[i]);
+		LOGCATV("ComputeShaderSample::Draw() => %f", mappedData[i]);
 	}
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 }

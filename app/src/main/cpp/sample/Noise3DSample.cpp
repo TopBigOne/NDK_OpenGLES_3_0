@@ -527,7 +527,7 @@ void Noise3DSample::Init()
 
 void Noise3DSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("Noise3DSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("Noise3DSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -540,7 +540,7 @@ void Noise3DSample::LoadImage(NativeImage *pImage)
 
 void Noise3DSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("Noise3DSample::Draw()");
+	LOGCATV("Noise3DSample::Draw()");
 
 	if (m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
 
@@ -607,7 +607,7 @@ void Noise3DSample::Destroy()
  * */
 void Noise3DSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("Noise3DSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX,
+	LOGCATV("Noise3DSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX,
 			angleY, ratio);
 	angleX = angleX % 360;
 	angleY = angleY % 360;

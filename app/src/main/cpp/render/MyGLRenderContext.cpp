@@ -103,7 +103,7 @@ MyGLRenderContext::~MyGLRenderContext()
 
 void MyGLRenderContext::SetParamsInt(int paramType, int value0, int value1)
 {
-	LOGCATE("MyGLRenderContext::SetParamsInt paramType = %d, value0 = %d, value1 = %d", paramType, value0, value1);
+	LOGCATD("MyGLRenderContext::SetParamsInt paramType = %d, value0 = %d, value1 = %d", paramType, value0, value1);
 
 	if (paramType == SAMPLE_TYPE)
 	{
@@ -113,7 +113,7 @@ void MyGLRenderContext::SetParamsInt(int paramType, int value0, int value1)
 			m_PendingDestroySamples.push_back(m_pCurSample);
 		}
 
-		LOGCATE("MyGLRenderContext::SetParamsInt 0 pendingDestroy = %zu", m_PendingDestroySamples.size());
+		LOGCATD("MyGLRenderContext::SetParamsInt 0 pendingDestroy = %zu", m_PendingDestroySamples.size());
 
 		switch (value0)
 		{
@@ -308,12 +308,12 @@ void MyGLRenderContext::SetParamsInt(int paramType, int value0, int value1)
 				break;
 		}
 
-		LOGCATE("MyGLRenderContext::SetParamsInt pendingDestroy = %zu, m_pCurSample=%p", m_PendingDestroySamples.size(), m_pCurSample);
+		LOGCATD("MyGLRenderContext::SetParamsInt pendingDestroy = %zu, m_pCurSample=%p", m_PendingDestroySamples.size(), m_pCurSample);
 	}
 }
 
 void MyGLRenderContext::SetParamsFloat(int paramType, float value0, float value1) {
-	LOGCATE("MyGLRenderContext::SetParamsFloat paramType=%d, value0=%f, value1=%f", paramType, value0, value1);
+	LOGCATV("MyGLRenderContext::SetParamsFloat paramType=%d, value0=%f, value1=%f", paramType, value0, value1);
 	std::lock_guard<std::mutex> lock(m_Mutex);
 	if(m_pCurSample)
 	{
@@ -334,7 +334,7 @@ void MyGLRenderContext::SetParamsFloat(int paramType, float value0, float value1
 }
 
 void MyGLRenderContext::SetParamsShortArr(short *const pShortArr, int arrSize) {
-	LOGCATE("MyGLRenderContext::SetParamsShortArr pShortArr=%p, arrSize=%d, pShortArr[0]=%d", pShortArr, arrSize, pShortArr[0]);
+	LOGCATV("MyGLRenderContext::SetParamsShortArr pShortArr=%p, arrSize=%d, pShortArr[0]=%d", pShortArr, arrSize, pShortArr[0]);
 	std::lock_guard<std::mutex> lock(m_Mutex);
 	if(m_pCurSample)
 	{
@@ -345,7 +345,7 @@ void MyGLRenderContext::SetParamsShortArr(short *const pShortArr, int arrSize) {
 
 void MyGLRenderContext::UpdateTransformMatrix(float rotateX, float rotateY, float scaleX, float scaleY)
 {
-	LOGCATE("MyGLRenderContext::UpdateTransformMatrix [rotateX, rotateY, scaleX, scaleY] = [%f, %f, %f, %f]", rotateX, rotateY, scaleX, scaleY);
+	LOGCATV("MyGLRenderContext::UpdateTransformMatrix [rotateX, rotateY, scaleX, scaleY] = [%f, %f, %f, %f]", rotateX, rotateY, scaleX, scaleY);
 	std::lock_guard<std::mutex> lock(m_Mutex);
 	if (m_pCurSample)
 	{
@@ -355,7 +355,7 @@ void MyGLRenderContext::UpdateTransformMatrix(float rotateX, float rotateY, floa
 
 void MyGLRenderContext::SetImageDataWithIndex(int index, int format, int width, int height, uint8_t *pData)
 {
-	LOGCATE("MyGLRenderContext::SetImageDataWithIndex index=%d, format=%d, width=%d, height=%d, pData=%p", index, format, width, height, pData);
+	LOGCATD("MyGLRenderContext::SetImageDataWithIndex index=%d, format=%d, width=%d, height=%d, pData=%p", index, format, width, height, pData);
 	NativeImage nativeImage;
 	nativeImage.format = format;
 	nativeImage.width = width;
@@ -386,7 +386,7 @@ void MyGLRenderContext::SetImageDataWithIndex(int index, int format, int width, 
 
 void MyGLRenderContext::SetImageData(int format, int width, int height, uint8_t *pData)
 {
-	LOGCATE("MyGLRenderContext::SetImageData format=%d, width=%d, height=%d, pData=%p", format, width, height, pData);
+	LOGCATD("MyGLRenderContext::SetImageData format=%d, width=%d, height=%d, pData=%p", format, width, height, pData);
 	NativeImage nativeImage;
 	nativeImage.format = format;
 	nativeImage.width = width;
@@ -417,13 +417,13 @@ void MyGLRenderContext::SetImageData(int format, int width, int height, uint8_t 
 
 void MyGLRenderContext::OnSurfaceCreated()
 {
-	LOGCATE("MyGLRenderContext::OnSurfaceCreated");
+	LOGCATD("MyGLRenderContext::OnSurfaceCreated");
 	glClearColor(1.0f,1.0f,1.0f, 1.0f);
 }
 
 void MyGLRenderContext::OnSurfaceChanged(int width, int height)
 {
-	LOGCATE("MyGLRenderContext::OnSurfaceChanged [w, h] = [%d, %d]", width, height);
+	LOGCATD("MyGLRenderContext::OnSurfaceChanged [w, h] = [%d, %d]", width, height);
 	glViewport(0, 0, width, height);
 	m_ScreenW = width;
 	m_ScreenH = height;
@@ -431,7 +431,7 @@ void MyGLRenderContext::OnSurfaceChanged(int width, int height)
 
 void MyGLRenderContext::OnDrawFrame()
 {
-	LOGCATE("MyGLRenderContext::OnDrawFrame");
+	LOGCATV("MyGLRenderContext::OnDrawFrame");
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 	std::lock_guard<std::mutex> lock(m_Mutex);
@@ -453,7 +453,7 @@ void MyGLRenderContext::OnDrawFrame()
 
 MyGLRenderContext *MyGLRenderContext::GetInstance()
 {
-	LOGCATE("MyGLRenderContext::GetInstance");
+	LOGCATV("MyGLRenderContext::GetInstance");
 	if (m_pContext == nullptr)
 	{
 		m_pContext = new MyGLRenderContext();
@@ -463,7 +463,7 @@ MyGLRenderContext *MyGLRenderContext::GetInstance()
 
 void MyGLRenderContext::DestroyInstance()
 {
-	LOGCATE("MyGLRenderContext::DestroyInstance");
+	LOGCATD("MyGLRenderContext::DestroyInstance");
 	if (m_pContext)
 	{
 		delete m_pContext;

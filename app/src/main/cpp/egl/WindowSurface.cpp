@@ -31,7 +31,7 @@ void WindowSurface::release() {
 void WindowSurface::recreate(EglCore *eglCore) {
     assert(mSurface != NULL);
     if (mSurface == NULL) {
-        LOGCATE("not yet implemented ANativeWindow");
+        LOGCATD("not yet implemented ANativeWindow");
         return;
     }
     mEglCore = eglCore;

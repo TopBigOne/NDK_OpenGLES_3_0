@@ -11,7 +11,7 @@
 
 void RenderI444Sample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("RenderI444Sample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("RenderI444Sample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -86,7 +86,7 @@ void RenderI444Sample::Init()
 
 void RenderI444Sample::Draw(int screenW, int screenH)
 {
-	LOGCATE("RenderI444Sample::Draw()");
+	LOGCATV("RenderI444Sample::Draw()");
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 	if(m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
 

@@ -28,7 +28,7 @@ TransformFeedbackSample::~TransformFeedbackSample()
 
 void TransformFeedbackSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("TransformFeedbackSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("TransformFeedbackSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -95,7 +95,7 @@ void TransformFeedbackSample::Init()
 
 	if (m_ProgramObj == GL_NONE )
 	{
-		LOGCATE("TransformFeedbackSample::Init m_ProgramObj == GL_NONE");
+		LOGCATD("TransformFeedbackSample::Init m_ProgramObj == GL_NONE");
 		return;
 	}
 	m_SamplerLoc = glGetUniformLocation(m_ProgramObj, "s_TextureMap");
@@ -181,7 +181,7 @@ void TransformFeedbackSample::Draw(int screenW, int screenH)
 	float *p = (float*)rawData;
 	for(int i= 0; i< 6; i++)
 	{
-		LOGCATE("TransformFeedbackSample::Draw() read feedback buffer outPos[%d] = [%f, %f, %f], outTex[%d] = [%f, %f]", i, p[i * 5], p[i * 5 + 1], p[i * 5 + 2], i, p[i * 5 + 3], p[i * 5 + 4]);
+		LOGCATV("TransformFeedbackSample::Draw() read feedback buffer outPos[%d] = [%f, %f, %f], outTex[%d] = [%f, %f]", i, p[i * 5], p[i * 5 + 1], p[i * 5 + 2], i, p[i * 5 + 3], p[i * 5 + 4]);
 	}
 
 	glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER);

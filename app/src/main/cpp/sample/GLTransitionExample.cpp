@@ -386,7 +386,7 @@ void GLTransitionExample::Init()
  */
 void GLTransitionExample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("GLTransitionExample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("GLTransitionExample::LoadImage pImage = %p", pImage->ppPlane[0]);
 }
 
 /**
@@ -396,7 +396,7 @@ void GLTransitionExample::LoadImage(NativeImage *pImage)
  */
 void GLTransitionExample::Draw(int screenW, int screenH)
 {
-	LOGCATE("GLTransitionExample::Draw()");
+	LOGCATV("GLTransitionExample::Draw()");
 
 	// 检查着色器程序和纹理是否已初始化
 	if(m_ProgramObj == GL_NONE || m_TextureIds[0] == GL_NONE) return;
@@ -465,7 +465,7 @@ void GLTransitionExample::Destroy()
  */
 void GLTransitionExample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("GLTransitionExample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("GLTransitionExample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 	// 将角度限制在 0-360 度范围内
 	angleX = angleX % 360;
 	angleY = angleY % 360;
@@ -520,7 +520,7 @@ void GLTransitionExample::UpdateTransformMatrix(float rotateX, float rotateY, fl
  * @param pImage 图片数据指针
  */
 void GLTransitionExample::LoadMultiImageWithIndex(int index, NativeImage *pImage) {
-	LOGCATE("GLTransitionExample::LoadMultiImageWithIndex pImage = %p,[w=%d,h=%d,f=%d]", pImage->ppPlane[0], pImage->width, pImage->height, pImage->format);
+	LOGCATD("GLTransitionExample::LoadMultiImageWithIndex pImage = %p,[w=%d,h=%d,f=%d]", pImage->ppPlane[0], pImage->width, pImage->height, pImage->format);
 	if (pImage && index >=0 && index < BF_IMG_NUM)
 	{
 		// 复制图片信息

@@ -147,7 +147,7 @@ void ShockWaveSample::Init()
 
 void ShockWaveSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("ShockWaveSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("ShockWaveSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -160,7 +160,7 @@ void ShockWaveSample::LoadImage(NativeImage *pImage)
 
 void ShockWaveSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("ShockWaveSample::Draw()");
+	LOGCATV("ShockWaveSample::Draw()");
     m_SurfaceWidth = screenW;
     m_SurfaceHeight = screenH;
 	if(m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
@@ -209,7 +209,7 @@ void ShockWaveSample::Destroy()
  * */
 void ShockWaveSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("ShockWaveSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("ShockWaveSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 	angleX = angleX % 360;
 	angleY = angleY % 360;
 

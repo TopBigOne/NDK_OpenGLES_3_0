@@ -188,7 +188,7 @@ void BigEyesSample::Init()
 
 void BigEyesSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("BigEyesSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("BigEyesSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 	    ScopedSyncLock lock(&m_Lock);
@@ -202,7 +202,7 @@ void BigEyesSample::LoadImage(NativeImage *pImage)
 
 void BigEyesSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("BigEyesSample::Draw() [w,h]=[%d,%d]", screenW, screenH);
+	LOGCATV("BigEyesSample::Draw() [w,h]=[%d,%d]", screenW, screenH);
 
 	if(m_ProgramObj == GL_NONE) return;
 
@@ -280,7 +280,7 @@ void BigEyesSample::Destroy()
  * */
 void BigEyesSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("BigEyesSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("BigEyesSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 	angleX = angleX % 360;
 	angleY = angleY % 360;
 

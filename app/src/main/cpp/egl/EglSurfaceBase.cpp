@@ -19,7 +19,7 @@ EglSurfaceBase::EglSurfaceBase(EglCore *eglCore) : mEglCore(eglCore) {
 void EglSurfaceBase::createWindowSurface(ANativeWindow *nativeWindow) {
     assert(mEglSurface == EGL_NO_SURFACE);
     if (mEglSurface != EGL_NO_SURFACE) {
-        LOGCATE("surface already created\n");
+        LOGCATD("surface already created\n");
         return;
     }
     mEglSurface = mEglCore->createWindowSurface(nativeWindow);
@@ -33,7 +33,7 @@ void EglSurfaceBase::createWindowSurface(ANativeWindow *nativeWindow) {
 void EglSurfaceBase::createOffscreenSurface(int width, int height) {
     assert(mEglSurface == EGL_NO_SURFACE);
     if (mEglSurface != EGL_NO_SURFACE) {
-        LOGCATE("surface already created\n");
+        LOGCATD("surface already created\n");
         return;
     }
     mEglSurface = mEglCore->createOffscreenSurface(width, height);

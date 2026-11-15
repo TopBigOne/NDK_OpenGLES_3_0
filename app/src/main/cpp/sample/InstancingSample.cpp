@@ -105,7 +105,7 @@ void InstancingSample::Init()
 
 void InstancingSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("InstancingSample::Draw");
+	LOGCATV("InstancingSample::Draw");
 
 	if(m_ProgramObj == 0)
 		return;

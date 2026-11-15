@@ -107,13 +107,13 @@ void VisualizeAudioSample::Init() {
 }
 
 void VisualizeAudioSample::LoadImage(NativeImage *pImage) {
-    LOGCATE("VisualizeAudioSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+    LOGCATD("VisualizeAudioSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 
 }
 
 
 void VisualizeAudioSample::Draw(int screenW, int screenH) {
-    LOGCATE("VisualizeAudioSample::Draw()");
+    LOGCATV("VisualizeAudioSample::Draw()");
     glClearColor(1.0f, 1.0f, 1.0f, 1.0);
     if (m_ProgramObj == GL_NONE) return;
     std::this_thread::sleep_for(std::chrono::milliseconds(25));
@@ -189,7 +189,7 @@ void VisualizeAudioSample::Destroy() {
 }
 
 void VisualizeAudioSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio) {
-    LOGCATE("VisualizeAudioSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX,
+    LOGCATV("VisualizeAudioSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX,
             angleY, ratio);
     angleX = angleX % 360;
     angleY = angleY % 360;
@@ -237,7 +237,7 @@ void VisualizeAudioSample::UpdateTransformMatrix(float rotateX, float rotateY, f
 
 void VisualizeAudioSample::LoadShortArrData(short *const pShortArr, int arrSize) {
     //GLSampleBase::LoadShortArrData(pShortArr, arrSize);
-    LOGCATE("VisualizeAudioSample::LoadShortArrData pShortArr=%p, arrSize=%d", pShortArr, arrSize);
+    LOGCATV("VisualizeAudioSample::LoadShortArrData pShortArr=%p, arrSize=%d", pShortArr, arrSize);
     if (pShortArr == nullptr || arrSize == 0)
         return;
     m_FrameIndex++;
@@ -263,7 +263,7 @@ void VisualizeAudioSample::LoadShortArrData(short *const pShortArr, int arrSize)
         memcpy(m_pAudioBuffer, m_pAudioBuffer + arrSize, sizeof(short) * arrSize);
         memcpy(m_pAudioBuffer + arrSize, pShortArr, sizeof(short) * arrSize);
     }
-    LOGCATE("VisualizeAudioSample::Draw() m_bAudioDataReady = true");
+    LOGCATV("VisualizeAudioSample::Draw() m_bAudioDataReady = true");
     m_bAudioDataReady = true;
     m_pCurAudioData = m_pAudioBuffer;
     m_Cond.wait(lock);
@@ -275,7 +275,7 @@ void VisualizeAudioSample::UpdateMesh() {
     int step = m_AudioDataSize / 64;
     if(m_pAudioBuffer + m_AudioDataSize - m_pCurAudioData >= step)
     {
-        LOGCATE("VisualizeAudioSample::Draw() m_pAudioBuffer + m_AudioDataSize - m_pCurAudioData >= step");
+        LOGCATV("VisualizeAudioSample::Draw() m_pAudioBuffer + m_AudioDataSize - m_pCurAudioData >= step");
         float dy = 0.5f / MAX_AUDIO_LEVEL;
         float dx = 1.0f / m_RenderDataSize;
         for (int i = 0; i < m_RenderDataSize; ++i) {
@@ -305,7 +305,7 @@ void VisualizeAudioSample::UpdateMesh() {
     }
     else
     {
-        LOGCATE("VisualizeAudioSample::Draw() m_pAudioBuffer + m_AudioDataSize - m_pCurAudioData < step");
+        LOGCATV("VisualizeAudioSample::Draw() m_pAudioBuffer + m_AudioDataSize - m_pCurAudioData < step");
         m_bAudioDataReady = false;
         m_Cond.notify_all();
         return;

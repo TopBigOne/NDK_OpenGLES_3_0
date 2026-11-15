@@ -235,7 +235,7 @@ void CloudSample::Init()
 
 void CloudSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("CloudSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("CloudSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -248,7 +248,7 @@ void CloudSample::LoadImage(NativeImage *pImage)
 
 void CloudSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("CloudSample::Draw()");
+	LOGCATV("CloudSample::Draw()");
 
 	if(m_ProgramObj == GL_NONE || m_RenderImage.ppPlane[0] == nullptr) return;
 
@@ -270,7 +270,7 @@ void CloudSample::Draw(int screenW, int screenH)
 
 	glUniformMatrix4fv(m_MVPMatLoc, 1, GL_FALSE, &m_MVPMatrix[0][0]);
 	float time = sFrameIndex * 0.04f;
-    LOGCATE("CloudSample::Draw() time=%f",time);
+    LOGCATV("CloudSample::Draw() time=%f",time);
 	glUniform1f(m_TimeLoc, time);
     glUniform2f(m_SizeLoc, screenW, screenH);
 	// Bind the RGBA map
@@ -295,7 +295,7 @@ void CloudSample::Destroy()
 
 void CloudSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("CloudSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("CloudSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 	angleX = angleX % 360;
 	angleY = angleY % 360;
 

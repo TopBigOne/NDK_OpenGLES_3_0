@@ -185,7 +185,7 @@ void PortraitStayColorExample::Init()
 
 void PortraitStayColorExample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("PortraitStayColorExample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("PortraitStayColorExample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -198,7 +198,7 @@ void PortraitStayColorExample::LoadImage(NativeImage *pImage)
 
 void PortraitStayColorExample::Draw(int screenW, int screenH)
 {
-	LOGCATE("PortraitStayColorExample::Draw()");
+	LOGCATV("PortraitStayColorExample::Draw()");
 
 	if(m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
 
@@ -258,7 +258,7 @@ void PortraitStayColorExample::Destroy()
  * */
 void PortraitStayColorExample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("PortraitStayColorExample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("PortraitStayColorExample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 	angleX = angleX % 360;
 	angleY = angleY % 360;
 
@@ -300,7 +300,7 @@ void PortraitStayColorExample::UpdateTransformMatrix(float rotateX, float rotate
 }
 
 void PortraitStayColorExample::LoadMultiImageWithIndex(int index, NativeImage *pImage) {
-	LOGCATE("PortraitStayColorExample::LoadMultiImageWithIndex pImage = %p,[w=%d,h=%d,f=%d]", pImage->ppPlane[0], pImage->width, pImage->height, pImage->format);
+	LOGCATD("PortraitStayColorExample::LoadMultiImageWithIndex pImage = %p,[w=%d,h=%d,f=%d]", pImage->ppPlane[0], pImage->width, pImage->height, pImage->format);
 	if (pImage)
 	{
         switch (index) {

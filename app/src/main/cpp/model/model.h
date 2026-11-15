@@ -52,14 +52,14 @@ public:
     {
         glm::vec3 vec3 = (abs(minXyz) + abs(maxXyz)) / 2.0f;
         float maxDis = fmax(vec3.x, fmax(vec3.y, vec3.z));
-        LOGCATE("Model::GetMaxViewDistance maxDis=%f", maxDis);
+        LOGCATD("Model::GetMaxViewDistance maxDis=%f", maxDis);
         return maxDis;
     }
 
     glm::vec3 GetAdjustModelPosVec()
     {
         glm::vec3 vec3 = (minXyz + maxXyz) / 2.0f;
-        LOGCATE("Model::GetAdjustModelPosVec vec3(%f, %f, %f)", vec3.x, vec3.y, vec3.z);
+        LOGCATD("Model::GetAdjustModelPosVec vec3(%f, %f, %f)", vec3.x, vec3.y, vec3.z);
         return (minXyz + maxXyz) / 2.0f;
     }
 
@@ -257,7 +257,7 @@ private:
         unsigned char *data = nullptr;
 
         // load the texture using OpenCV
-        LOGCATE("TextureFromFile Loading texture %s", filename.c_str());
+        LOGCATD("TextureFromFile Loading texture %s", filename.c_str());
         cv::Mat textureImage = cv::imread(filename);
         if (!textureImage.empty())
         {

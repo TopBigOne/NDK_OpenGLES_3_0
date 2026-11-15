@@ -108,7 +108,7 @@ void TextureMapSample::Init()
  */
 void TextureMapSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("TextureMapSample::Draw()");
+	LOGCATV("TextureMapSample::Draw()");
 
 	// 确保程序和纹理已创建
 	if(m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
@@ -204,7 +204,7 @@ void TextureMapSample::Draw(int screenW, int screenH)
  */
 void TextureMapSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("TextureMapSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("TextureMapSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;

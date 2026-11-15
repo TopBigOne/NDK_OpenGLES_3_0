@@ -183,7 +183,7 @@ void FaceSlenderSample::Init()
 
 void FaceSlenderSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("FaceSlenderSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("FaceSlenderSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
         ScopedSyncLock lock(&m_Lock);
@@ -197,7 +197,7 @@ void FaceSlenderSample::LoadImage(NativeImage *pImage)
 
 void FaceSlenderSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("FaceSlenderSample::Draw() [w,h]=[%d,%d]", screenW, screenH);
+	LOGCATV("FaceSlenderSample::Draw() [w,h]=[%d,%d]", screenW, screenH);
 
 	if(m_ProgramObj == GL_NONE) return;
 
@@ -239,7 +239,7 @@ void FaceSlenderSample::Draw(int screenW, int screenH)
     ratio = (m_FrameIndex / 100) % 2 == 1 ? (1 - ratio) : ratio;
 
     float effectRadius = PointUtil::Distance(PointF(LeftCheekKeyPoint[0], LeftCheekKeyPoint[1]), PointF(ChinKeyPoint[0], ChinKeyPoint[1])) / 2;
-    LOGCATE("FaceSlenderSample::Draw() ratio=%f, effectRadius=%f", ratio, effectRadius);
+    LOGCATV("FaceSlenderSample::Draw() ratio=%f, effectRadius=%f", ratio, effectRadius);
 	GLUtils::setFloat(m_ProgramObj, "u_reshapeRatio", ratio);
 	GLUtils::setFloat(m_ProgramObj, "u_reshapeRadius", effectRadius);
 	GLUtils::setVec4(m_ProgramObj, "u_preCtrlPoints",
@@ -280,7 +280,7 @@ void FaceSlenderSample::Destroy()
  * */
 void FaceSlenderSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("FaceSlenderSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("FaceSlenderSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 	angleX = angleX % 360;
 	angleY = angleY % 360;
 

@@ -52,7 +52,7 @@ ParticlesSample::~ParticlesSample()
 
 void ParticlesSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("ParticlesSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("ParticlesSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -256,7 +256,7 @@ void ParticlesSample::Init()
 
 void ParticlesSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("ParticlesSample::Draw()");
+	LOGCATV("ParticlesSample::Draw()");
 	if (m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
 	glEnable(GL_DEPTH_TEST);
 	glClear(GL_STENCIL_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -303,7 +303,7 @@ void ParticlesSample::Destroy()
  * */
 void ParticlesSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("ParticlesSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX,
+	LOGCATV("ParticlesSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX,
 			angleY, ratio);
 	angleX = angleX % 360;
 	angleY = angleY % 360;
@@ -376,7 +376,7 @@ void ParticlesSample::SortParticles()
 
 int ParticlesSample::UpdateParticles()
 {
-	LOGCATE("ParticlesSample::UpdateParticles");
+	LOGCATV("ParticlesSample::UpdateParticles");
 
 	int newParticles = 300;
 	for (int i = 0; i < newParticles; i++)

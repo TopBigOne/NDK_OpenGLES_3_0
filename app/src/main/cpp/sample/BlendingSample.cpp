@@ -224,7 +224,7 @@ void BlendingSample::Init()
 void BlendingSample::LoadMultiImageWithIndex(int index, NativeImage *pImage)
 {
 	GLSampleBase::LoadMultiImageWithIndex(index, pImage);
-	LOGCATE("BlendingSample::LoadImage index=%d, pImage = %p", index, pImage->ppPlane[0]);
+	LOGCATD("BlendingSample::LoadImage index=%d, pImage = %p", index, pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImages[index].width = pImage->width;
@@ -237,7 +237,7 @@ void BlendingSample::LoadMultiImageWithIndex(int index, NativeImage *pImage)
 
 void BlendingSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("BlendingSample::Draw()");
+	LOGCATV("BlendingSample::Draw()");
 
 	if (m_ProgramObj == GL_NONE) return;
 
@@ -314,7 +314,7 @@ void BlendingSample::Destroy()
 
 void BlendingSample::UpdateMatrix(glm::mat4 &mvpMatrix, int angleXRotate, int angleYRotate, float scale, glm::vec3 transVec3, float ratio)
 {
-	LOGCATE("BlendingSample::UpdateMatrix angleX = %d, angleY = %d, ratio = %f", angleXRotate,
+	LOGCATV("BlendingSample::UpdateMatrix angleX = %d, angleY = %d, ratio = %f", angleXRotate,
 			angleYRotate, ratio);
 	angleXRotate = angleXRotate % 360;
 	angleYRotate = angleYRotate % 360;

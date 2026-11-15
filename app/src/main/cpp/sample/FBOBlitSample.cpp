@@ -180,14 +180,14 @@ void FBOBlitSample::Init()
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
 
 	// 初始化帧缓冲对象（FBO），用于离屏渲染
-	LOGCATE("FBOBlitSample::Init InitFBO = %d", InitFBO());
+	LOGCATD("FBOBlitSample::Init InitFBO = %d", InitFBO());
 
 }
 
 // 加载图像数据
 void FBOBlitSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("FBOBlitSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("FBOBlitSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		// 复制图像元数据
@@ -202,7 +202,7 @@ void FBOBlitSample::LoadImage(NativeImage *pImage)
 // 渲染函数：执行离屏渲染和屏幕显示
 void FBOBlitSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("FBOBlitSample::Draw()");
+	LOGCATV("FBOBlitSample::Draw()");
 	m_SurfaceWidth = screenW;
 	m_SurfaceHeight = screenH;
 
@@ -262,7 +262,7 @@ void FBOBlitSample::Destroy()
  * */
 void FBOBlitSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("FBOBlitSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("FBOBlitSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 	angleX = angleX % 360;
 	angleY = angleY % 360;
 

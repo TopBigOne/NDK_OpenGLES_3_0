@@ -187,7 +187,7 @@ void CoordSystemSample::Init()
  */
 void CoordSystemSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("CoordSystemSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("CoordSystemSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -204,7 +204,7 @@ void CoordSystemSample::LoadImage(NativeImage *pImage)
  */
 void CoordSystemSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("CoordSystemSample::Draw()");
+	LOGCATV("CoordSystemSample::Draw()");
 
 	// 确保程序和纹理已创建
 	if(m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
@@ -265,7 +265,7 @@ void CoordSystemSample::Destroy()
  */
 void CoordSystemSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("CoordSystemSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("CoordSystemSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 
 	// 将角度限制在 [0, 360) 范围内
 	angleX = angleX % 360;

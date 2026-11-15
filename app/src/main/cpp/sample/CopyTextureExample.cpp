@@ -34,7 +34,7 @@ CopyTextureExample::~CopyTextureExample()
 
 void CopyTextureExample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("CopyTextureExample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("CopyTextureExample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -118,7 +118,7 @@ void CopyTextureExample::Init()
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATE("CopyTextureExample::Init m_ProgramObj == GL_NONE");
+		LOGCATD("CopyTextureExample::Init m_ProgramObj == GL_NONE");
 		return;
 	}
 	m_SamplerLoc = glGetUniformLocation(m_ProgramObj, "s_TextureMap");

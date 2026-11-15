@@ -74,7 +74,7 @@ PBOSample::~PBOSample()
  */
 void PBOSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("PBOSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("PBOSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -189,7 +189,7 @@ void PBOSample::Init()
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATE("PBOSample::Init m_ProgramObj == GL_NONE");
+		LOGCATD("PBOSample::Init m_ProgramObj == GL_NONE");
 		return;
 	}
 
@@ -486,7 +486,7 @@ bool PBOSample::CreateFrameBufferObj()
  */
 void PBOSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-    LOGCATE("PBOSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+    LOGCATV("PBOSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
     angleX = angleX % 360;
     angleY = angleY % 360;
 
@@ -522,7 +522,7 @@ void PBOSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, fl
  *   2. 不使用 PBO（同步）：直接从系统内存复制到纹理
  */
 void PBOSample::UploadPixels() {
-    LOGCATE("PBOSample::UploadPixels");
+    LOGCATV("PBOSample::UploadPixels");
 	int dataSize = m_RenderImage.width * m_RenderImage.height * 4;  // RGBA 总字节数
 
 #ifdef PBO_UPLOAD
@@ -560,7 +560,7 @@ void PBOSample::UploadPixels() {
 												   GL_MAP_WRITE_BIT |            // 写权限
 												   GL_MAP_INVALIDATE_BUFFER_BIT); // 丢弃旧数据
 	GO_CHECK_GL_ERROR();
-	LOGCATE("PBOSample::UploadPixels bufPtr=%p",bufPtr);
+	LOGCATV("PBOSample::UploadPixels bufPtr=%p",bufPtr);
 
 	if(bufPtr)
 	{

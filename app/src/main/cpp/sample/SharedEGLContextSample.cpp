@@ -29,7 +29,7 @@ SharedEGLContextSample::~SharedEGLContextSample()
 
 void SharedEGLContextSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("SharedEGLContextSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("SharedEGLContextSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -123,7 +123,7 @@ void SharedEGLContextSample::Init()
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATE("SharedEGLContextSample::Init m_ProgramObj == GL_NONE");
+		LOGCATD("SharedEGLContextSample::Init m_ProgramObj == GL_NONE");
 		return;
 	}
 
@@ -182,7 +182,7 @@ void SharedEGLContextSample::Init()
 	m_GLEnv.imgSize       = imgSize;
 	m_GLEnv.renderDone    = OnAsyncRenderDone;
 	m_GLEnv.callbackCtx   = this;
-    LOGCATE("SharedEGLContextSample::Init sharedCtx=%p", m_GLEnv.sharedCtx);
+    LOGCATD("SharedEGLContextSample::Init sharedCtx=%p", m_GLEnv.sharedCtx);
 
     GLRenderLooper::GetInstance()->postMessage(MSG_SurfaceCreated, &m_GLEnv);
 
@@ -191,7 +191,7 @@ void SharedEGLContextSample::Init()
 
 void SharedEGLContextSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("SharedEGLContextSample::Draw");
+	LOGCATV("SharedEGLContextSample::Draw");
 	{
 		unique_lock<mutex> lock(m_Mutex);
 		GLRenderLooper::GetInstance()->postMessage(MSG_DrawFrame);
@@ -214,7 +214,7 @@ void SharedEGLContextSample::Draw(int screenW, int screenH)
 }
 
 void SharedEGLContextSample::OnAsyncRenderDone(void *callback, int fboTexId) {
-	LOGCATE("SharedEGLContextSample::OnAsyncRenderDone callback=%p, fboTexId=%d", callback, fboTexId);
+	LOGCATV("SharedEGLContextSample::OnAsyncRenderDone callback=%p, fboTexId=%d", callback, fboTexId);
 	SharedEGLContextSample *ctx = static_cast<SharedEGLContextSample *>(callback);
 	unique_lock<mutex> lock(ctx->m_Mutex);
 	ctx->m_FboTextureId = fboTexId;

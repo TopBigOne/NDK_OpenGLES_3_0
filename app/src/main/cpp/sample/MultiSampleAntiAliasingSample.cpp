@@ -157,7 +157,7 @@ void MultiSampleAntiAliasingSample::Init()
 
 void MultiSampleAntiAliasingSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("MultiSampleAntiAliasingSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("MultiSampleAntiAliasingSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -170,7 +170,7 @@ void MultiSampleAntiAliasingSample::LoadImage(NativeImage *pImage)
 
 void MultiSampleAntiAliasingSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("MultiSampleAntiAliasingSample::Draw() [w,h]=[%d,%d]", screenW, screenH);
+	LOGCATV("MultiSampleAntiAliasingSample::Draw() [w,h]=[%d,%d]", screenW, screenH);
 
 	if(m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
 
@@ -266,7 +266,7 @@ void MultiSampleAntiAliasingSample::Destroy()
 
 void MultiSampleAntiAliasingSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("MultiSampleAntiAliasingSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("MultiSampleAntiAliasingSample::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 	angleX = angleX % 360;
 	angleY = angleY % 360;
 

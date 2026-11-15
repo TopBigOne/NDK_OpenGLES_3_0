@@ -178,7 +178,7 @@ void DepthTestingSample::Init()
 
 void DepthTestingSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("DepthTestingSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("DepthTestingSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -191,7 +191,7 @@ void DepthTestingSample::LoadImage(NativeImage *pImage)
 
 void DepthTestingSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("DepthTestingSample::Draw()");
+	LOGCATV("DepthTestingSample::Draw()");
 
 	if (m_ProgramObj == GL_NONE || m_TextureId == GL_NONE) return;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -242,7 +242,7 @@ void DepthTestingSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int a
 
 void DepthTestingSample::UpdateMatrix(glm::mat4 &mvpMatrix, glm::mat4 &modelMatrix, int angleXRotate, int angleYRotate, float scale, glm::vec3 transVec3, float ratio)
 {
-	LOGCATE("DepthTestingSample::UpdateMatrix angleX = %d, angleY = %d, ratio = %f", angleXRotate,
+	LOGCATV("DepthTestingSample::UpdateMatrix angleX = %d, angleY = %d, ratio = %f", angleXRotate,
 			angleYRotate, ratio);
 	angleXRotate = angleXRotate % 360;
 	angleYRotate = angleYRotate % 360;

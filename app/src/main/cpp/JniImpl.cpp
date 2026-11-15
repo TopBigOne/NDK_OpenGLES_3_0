@@ -235,7 +235,7 @@ static JNINativeMethod g_BgRenderMethods[] = {
 
 static int RegisterNativeMethods(JNIEnv *env, const char *className, JNINativeMethod *methods, int methodNum)
 {
-	LOGCATE("RegisterNativeMethods");
+	LOGCATD("RegisterNativeMethods");
 	jclass clazz = env->FindClass(className);
 	if (clazz == NULL)
 	{
@@ -252,7 +252,7 @@ static int RegisterNativeMethods(JNIEnv *env, const char *className, JNINativeMe
 
 static void UnregisterNativeMethods(JNIEnv *env, const char *className)
 {
-	LOGCATE("UnregisterNativeMethods");
+	LOGCATD("UnregisterNativeMethods");
 	jclass clazz = env->FindClass(className);
 	if (clazz == NULL)
 	{
@@ -268,7 +268,7 @@ static void UnregisterNativeMethods(JNIEnv *env, const char *className)
 // call this func when loading lib
 extern "C" jint JNI_OnLoad(JavaVM *jvm, void *p)
 {
-	LOGCATE("===== JNI_OnLoad =====");
+	LOGCATD("===== JNI_OnLoad =====");
 	jint jniRet = JNI_ERR;
 	JNIEnv *env = NULL;
 	if (jvm->GetEnv((void **) (&env), JNI_VERSION_1_6) != JNI_OK)

@@ -206,12 +206,12 @@ void GLTransitionExample_4::Init()
 
 void GLTransitionExample_4::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("GLTransitionExample_4::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("GLTransitionExample_4::LoadImage pImage = %p", pImage->ppPlane[0]);
 }
 
 void GLTransitionExample_4::Draw(int screenW, int screenH)
 {
-	LOGCATE("GLTransitionExample_4::Draw()");
+	LOGCATV("GLTransitionExample_4::Draw()");
 
 	if(m_ProgramObj == GL_NONE || m_TextureIds[0] == GL_NONE) return;
 
@@ -259,7 +259,7 @@ void GLTransitionExample_4::Destroy()
 
 void GLTransitionExample_4::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)
 {
-	LOGCATE("GLTransitionExample_4::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
+	LOGCATV("GLTransitionExample_4::UpdateMVPMatrix angleX = %d, angleY = %d, ratio = %f", angleX, angleY, ratio);
 	angleX = angleX % 360;
 	angleY = angleY % 360;
 
@@ -301,7 +301,7 @@ void GLTransitionExample_4::UpdateTransformMatrix(float rotateX, float rotateY, 
 }
 
 void GLTransitionExample_4::LoadMultiImageWithIndex(int index, NativeImage *pImage) {
-	LOGCATE("GLTransitionExample_4::LoadMultiImageWithIndex pImage = %p,[w=%d,h=%d,f=%d]", pImage->ppPlane[0], pImage->width, pImage->height, pImage->format);
+	LOGCATD("GLTransitionExample_4::LoadMultiImageWithIndex pImage = %p,[w=%d,h=%d,f=%d]", pImage->ppPlane[0], pImage->width, pImage->height, pImage->format);
 	if (pImage && index >=0 && index < BF_IMG_NUM)
 	{
 		m_RenderImages[index].width = pImage->width;

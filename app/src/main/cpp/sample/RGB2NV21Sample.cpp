@@ -31,7 +31,7 @@ RGB2NV21Sample::~RGB2NV21Sample()
 
 void RGB2NV21Sample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("RGB2NV21Sample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("RGB2NV21Sample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -167,7 +167,7 @@ void RGB2NV21Sample::Init()
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATE("RGB2NV21Sample::Init m_ProgramObj == GL_NONE");
+		LOGCATD("RGB2NV21Sample::Init m_ProgramObj == GL_NONE");
 		return;
 	}
 	m_SamplerLoc = glGetUniformLocation(m_ProgramObj, "s_TextureMap");
@@ -251,7 +251,7 @@ void RGB2NV21Sample::Init()
 
 void RGB2NV21Sample::Draw(int screenW, int screenH)
 {
-	LOGCATE("RGB2NV21Sample::Draw");
+	LOGCATV("RGB2NV21Sample::Draw");
 	// 离屏渲染
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 	// Do FBO off screen rendering

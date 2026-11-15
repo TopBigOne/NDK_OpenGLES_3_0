@@ -25,7 +25,7 @@
  */
 void NV21TextureMapSample::LoadImage(NativeImage *pImage)
 {
-	LOGCATE("NV21TextureMapSample::LoadImage pImage = %p", pImage->ppPlane[0]);
+	LOGCATD("NV21TextureMapSample::LoadImage pImage = %p", pImage->ppPlane[0]);
 	if (pImage)
 	{
 		m_RenderImage.width = pImage->width;
@@ -120,7 +120,7 @@ void NV21TextureMapSample::Init()
  */
 void NV21TextureMapSample::Draw(int screenW, int screenH)
 {
-	LOGCATE("NV21TextureMapSample::Draw()");
+	LOGCATV("NV21TextureMapSample::Draw()");
 
 	if(m_ProgramObj == GL_NONE || m_yTextureId == GL_NONE || m_uvTextureId == GL_NONE) return;
 

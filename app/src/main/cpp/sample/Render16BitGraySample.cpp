@@ -79,7 +79,7 @@ void Render16BitGraySample::Init()
 
 void Render16BitGraySample::Draw(int screenW, int screenH)
 {
-	LOGCATE("Render16BitGraySample::Draw()");
+	LOGCATV("Render16BitGraySample::Draw()");
 
 	if(m_ProgramObj == GL_NONE || m_yTextureId == GL_NONE) return;
 
