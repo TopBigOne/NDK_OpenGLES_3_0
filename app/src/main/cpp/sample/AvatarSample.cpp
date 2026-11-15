@@ -32,6 +32,8 @@ AvatarSample::AvatarSample()
 	m_MVPMatLoc = GL_NONE;
 
 	m_VaoId = GL_NONE;
+	memset(m_VboIds, 0, sizeof(m_VboIds));
+	m_BlurProgramObj = GL_NONE;
 
 	m_AngleX = 0;
 	m_AngleY = 0;
@@ -56,10 +58,8 @@ AvatarSample::~AvatarSample()
 
 }
 
-void AvatarSample::Init()
+bool AvatarSample::Init()
 {
-	if(m_ProgramObj)
-		return;
 	//create RGBA texture
 	glGenTextures(RENDER_IMG_NUM, m_TextureIds);
     for (int i = 0; i < RENDER_IMG_NUM; ++i) {
@@ -161,9 +161,10 @@ void AvatarSample::Init()
 		m_SamplerLoc = glGetUniformLocation(m_ProgramObj, "s_TextureMap");
 		m_MVPMatLoc = glGetUniformLocation(m_ProgramObj, "u_MVPMatrix");
 	}
-	else
+	if (m_ProgramObj == GL_NONE || m_BlurProgramObj == GL_NONE)
 	{
 		LOGCATE("AvatarSample::Init create program fail");
+		return false;
 	}
 
 	GLfloat verticesCoords[] = {
@@ -211,6 +212,8 @@ void AvatarSample::Init()
 
 	glBindVertexArray(GL_NONE);
 
+
+	return true;
 }
 
 void AvatarSample::LoadImage(NativeImage *pImage)
@@ -294,13 +297,11 @@ void AvatarSample::Draw(int screenW, int screenH)
 
 void AvatarSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(3, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(RENDER_IMG_NUM, m_TextureIds);
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteProgram(m_BlurProgramObj);
+	GLUtils::DeleteBuffers(3, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteTextures(RENDER_IMG_NUM, m_TextureIds);
 }
 
 /**
