@@ -80,23 +80,24 @@ MyGLRenderContext* MyGLRenderContext::m_pContext = nullptr;
 MyGLRenderContext::MyGLRenderContext()
 {
 	m_pCurSample = new BeatingHeartSample();
-	m_pBeforeSample = nullptr;
+	m_ScreenW = 0;
+	m_ScreenH = 0;
 }
 
 MyGLRenderContext::~MyGLRenderContext()
 {
+	std::lock_guard<std::mutex> lock(m_Mutex);
 	if (m_pCurSample)
 	{
 		delete m_pCurSample;
 		m_pCurSample = nullptr;
 	}
 
-	if (m_pBeforeSample)
+	for (GLSampleBase *pSample : m_PendingDestroySamples)
 	{
-		delete m_pBeforeSample;
-		m_pBeforeSample = nullptr;
+		delete pSample;
 	}
-
+	m_PendingDestroySamples.clear();
 }
 
 
@@ -106,9 +107,13 @@ void MyGLRenderContext::SetParamsInt(int paramType, int value0, int value1)
 
 	if (paramType == SAMPLE_TYPE)
 	{
-		m_pBeforeSample = m_pCurSample;
+		std::lock_guard<std::mutex> lock(m_Mutex);
+		if (m_pCurSample)
+		{
+			m_PendingDestroySamples.push_back(m_pCurSample);
+		}
 
-		LOGCATE("MyGLRenderContext::SetParamsInt 0 m_pBeforeSample = %p", m_pBeforeSample);
+		LOGCATE("MyGLRenderContext::SetParamsInt 0 pendingDestroy = %zu", m_PendingDestroySamples.size());
 
 		switch (value0)
 		{
@@ -303,12 +308,13 @@ void MyGLRenderContext::SetParamsInt(int paramType, int value0, int value1)
 				break;
 		}
 
-		LOGCATE("MyGLRenderContext::SetParamsInt m_pBeforeSample = %p, m_pCurSample=%p", m_pBeforeSample, m_pCurSample);
+		LOGCATE("MyGLRenderContext::SetParamsInt pendingDestroy = %zu, m_pCurSample=%p", m_PendingDestroySamples.size(), m_pCurSample);
 	}
 }
 
 void MyGLRenderContext::SetParamsFloat(int paramType, float value0, float value1) {
 	LOGCATE("MyGLRenderContext::SetParamsFloat paramType=%d, value0=%f, value1=%f", paramType, value0, value1);
+	std::lock_guard<std::mutex> lock(m_Mutex);
 	if(m_pCurSample)
 	{
 		switch (paramType)
@@ -329,6 +335,7 @@ void MyGLRenderContext::SetParamsFloat(int paramType, float value0, float value1
 
 void MyGLRenderContext::SetParamsShortArr(short *const pShortArr, int arrSize) {
 	LOGCATE("MyGLRenderContext::SetParamsShortArr pShortArr=%p, arrSize=%d, pShortArr[0]=%d", pShortArr, arrSize, pShortArr[0]);
+	std::lock_guard<std::mutex> lock(m_Mutex);
 	if(m_pCurSample)
 	{
 		m_pCurSample->LoadShortArrData(pShortArr, arrSize);
@@ -339,6 +346,7 @@ void MyGLRenderContext::SetParamsShortArr(short *const pShortArr, int arrSize) {
 void MyGLRenderContext::UpdateTransformMatrix(float rotateX, float rotateY, float scaleX, float scaleY)
 {
 	LOGCATE("MyGLRenderContext::UpdateTransformMatrix [rotateX, rotateY, scaleX, scaleY] = [%f, %f, %f, %f]", rotateX, rotateY, scaleX, scaleY);
+	std::lock_guard<std::mutex> lock(m_Mutex);
 	if (m_pCurSample)
 	{
 		m_pCurSample->UpdateTransformMatrix(rotateX, rotateY, scaleX, scaleY);
@@ -368,6 +376,7 @@ void MyGLRenderContext::SetImageDataWithIndex(int index, int format, int width, 
 			break;
 	}
 
+	std::lock_guard<std::mutex> lock(m_Mutex);
 	if (m_pCurSample)
 	{
 		m_pCurSample->LoadMultiImageWithIndex(index, &nativeImage);
@@ -398,6 +407,7 @@ void MyGLRenderContext::SetImageData(int format, int width, int height, uint8_t 
 			break;
 	}
 
+	std::lock_guard<std::mutex> lock(m_Mutex);
 	if (m_pCurSample)
 	{
 		m_pCurSample->LoadImage(&nativeImage);
@@ -424,12 +434,15 @@ void MyGLRenderContext::OnDrawFrame()
 	LOGCATE("MyGLRenderContext::OnDrawFrame");
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-	if (m_pBeforeSample)
+	std::lock_guard<std::mutex> lock(m_Mutex);
+
+	// 在 GL 线程里释放被切换掉的示例，它们的 GL 资源只能在这里删除
+	for (GLSampleBase *pSample : m_PendingDestroySamples)
 	{
-		m_pBeforeSample->Destroy();
-		delete m_pBeforeSample;
-		m_pBeforeSample = nullptr;
+		pSample->Destroy();
+		delete pSample;
 	}
+	m_PendingDestroySamples.clear();
 
 	if (m_pCurSample)
 	{

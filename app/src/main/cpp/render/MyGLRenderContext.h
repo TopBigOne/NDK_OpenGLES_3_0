@@ -10,6 +10,8 @@
 #define OPENGLES_3_0_MYGLRENDERCONTEXT_H
 
 #include "stdint.h"
+#include <mutex>
+#include <vector>
 #include <GLES3/gl3.h>
 #include "TextureMapSample.h"
 #include "NV21TextureMapSample.h"
@@ -45,7 +47,15 @@ public:
 
 private:
 	static MyGLRenderContext *m_pContext;
-	GLSampleBase *m_pBeforeSample;
+
+	// Java 层在 UI 线程调用 SetXXX，GLSurfaceView 在 GL 线程调用 OnDrawFrame，
+	// 两边都会访问 m_pCurSample，必须用同一把锁保护。
+	std::mutex m_Mutex;
+
+	// 切换示例后被替换下来的旧示例。它们持有 GL 资源，只能在 GL 线程里 Destroy，
+	// 所以先放进这个列表，等下一次 OnDrawFrame 统一释放。
+	// 用列表而不是单个指针：两帧之间连续切换多次时，旧示例不会被覆盖而泄漏。
+	std::vector<GLSampleBase *> m_PendingDestroySamples;
 	GLSampleBase *m_pCurSample;
 	int m_ScreenW;
 	int m_ScreenH;

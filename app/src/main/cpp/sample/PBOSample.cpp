@@ -432,6 +432,10 @@ void PBOSample::Destroy()
         glDeleteBuffers(2, m_UploadPboIds);    // 删除上传 PBO
     }
 
+    // 释放从下载 PBO 拷贝出来的图像数据
+    NativeImageUtil::FreeNativeImage(&m_DownloadImages[0]);
+    NativeImageUtil::FreeNativeImage(&m_DownloadImages[1]);
+
 }
 
 /**
@@ -619,10 +623,13 @@ void PBOSample::DownloadPixels() {
     glReadPixels(0, 0, m_RenderImage.width, m_RenderImage.height, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     END_TIME("DownloadPixels glReadPixels with PBO")
 
-    if(m_DownloadImages[nextIndex].ppPlane[0] == nullptr)
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+
+    // 第 0 帧时 nextIndex 对应的 PBO 还没有被 glReadPixels 写入过，里面是未定义数据，跳过。
+    // 每个 PBO 只读回并保存一次，避免每帧做文件 IO。
+    if (m_FrameIndex > 0 && m_DownloadImages[nextIndex].ppPlane[0] == nullptr)
     {
-		m_DownloadImages[nextIndex] = m_RenderImage;
-		m_DownloadImages[nextIndex].format = IMAGE_FORMAT_RGBA;
+		NativeImage &dstImage = m_DownloadImages[nextIndex];
 
 		BEGIN_TIME("DownloadPixels PBO glMapBufferRange")
 			glBindBuffer(GL_PIXEL_PACK_BUFFER, m_DownloadPboIds[nextIndex]);
@@ -631,19 +638,24 @@ void PBOSample::DownloadPixels() {
 																	  GL_MAP_READ_BIT));
 
 			if (bufPtr) {
-				m_DownloadImages[nextIndex].ppPlane[0] = bufPtr;
-				//NativeImageUtil::DumpNativeImage(&nativeImage, "/sdcard/DCIM", "PBO");
+				// 映射得到的指针只在 glUnmapBuffer 之前有效，必须先拷贝到自己的内存
+				dstImage.width = m_RenderImage.width;
+				dstImage.height = m_RenderImage.height;
+				dstImage.format = IMAGE_FORMAT_RGBA;
+				NativeImageUtil::AllocNativeImage(&dstImage);
+				if (dstImage.ppPlane[0] != nullptr) {
+					memcpy(dstImage.ppPlane[0], bufPtr, static_cast<size_t>(dataSize));
+				}
 			}
 			glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 		END_TIME("DownloadPixels PBO glMapBufferRange")
 		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-    }
 
-	if(m_DownloadImages[nextIndex].ppPlane[0] != nullptr) {
-		char key[] = "PBO";
-		char fileName[64] = {0};
-		sprintf(fileName, "%s_%d", key, nextIndex);
-		std::string path(DEFAULT_OGL_ASSETS_DIR);
-		NativeImageUtil::DumpNativeImage(&m_DownloadImages[nextIndex], path.c_str(), fileName);
-	}
+		if (dstImage.ppPlane[0] != nullptr) {
+			char fileName[64] = {0};
+			snprintf(fileName, sizeof(fileName), "PBO_%d", nextIndex);
+			std::string path(DEFAULT_OGL_ASSETS_DIR);
+			NativeImageUtil::DumpNativeImage(&dstImage, path.c_str(), fileName);
+		}
+    }
 }
