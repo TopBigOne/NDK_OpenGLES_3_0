@@ -3,6 +3,7 @@
 //
 
 #include <assert.h>
+#include <stdlib.h>
 #include <GLES2/gl2.h>
 #include <LogUtil.h>
 #include "EglSurfaceBase.h"
@@ -10,6 +11,9 @@
 
 EglSurfaceBase::EglSurfaceBase(EglCore *eglCore) : mEglCore(eglCore) {
     mEglSurface = EGL_NO_SURFACE;
+    // -1 表示“未知，需要向 EGL 查询”；原来未初始化，窗口 surface 的 getWidth/getHeight 返回垃圾值
+    mWidth = -1;
+    mHeight = -1;
 }
 
 /**
@@ -106,7 +110,11 @@ void EglSurfaceBase::setPresentationTime(long nsecs) {
  * @return
  */
 char* EglSurfaceBase::getCurrentFrame() {
-    char *pixels = NULL;
-    glReadPixels(0, 0, getWidth(), getHeight(), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    // 原来向空指针 glReadPixels，返回的也永远是 NULL。现在分配缓冲区，调用方负责 free()。
+    int w = getWidth(), h = getHeight();
+    if (w <= 0 || h <= 0) return NULL;
+    char *pixels = static_cast<char *>(malloc(static_cast<size_t>(w) * h * 4));
+    if (pixels == NULL) return NULL;
+    glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     return pixels;
 }

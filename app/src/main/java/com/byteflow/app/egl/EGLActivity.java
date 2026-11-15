@@ -105,14 +105,20 @@ public class EGLActivity extends AppCompatActivity {
         return true;
     }
     private void startBgRender() {
-        loadRGBAImage(R.drawable.leg, mBgRender);
+        Bitmap src = loadRGBAImage(R.drawable.leg, mBgRender);
+        if (src == null) {
+            return;
+        }
         mBgRender.native_EglRenderDraw();
-        mImageView.setImageBitmap(createBitmapFromGLSurface(0, 0, 933, 1400));
+        // 原来硬编码读回 933x1400：解码后的尺寸随屏幕密度变化（drawable 会被缩放），
+        // 尺寸不符时读回的是错位/越界的画面。这里使用实际传给 native 的图像尺寸。
+        // 注意：native 的 EGL 上下文在 onCreate 中于 UI 线程设为当前，所以 glReadPixels 也必须在 UI 线程调用。
+        mImageView.setImageBitmap(createBitmapFromGLSurface(0, 0, src.getWidth(), src.getHeight()));
     }
 
-    private void loadRGBAImage(int resId, NativeEglRender render) {
+    private Bitmap loadRGBAImage(int resId, NativeEglRender render) {
         InputStream is = this.getResources().openRawResource(resId);
-        Bitmap bitmap;
+        Bitmap bitmap = null;
         try {
             bitmap = BitmapFactory.decodeStream(is);
             if (bitmap != null) {
@@ -134,6 +140,7 @@ public class EGLActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
+        return bitmap;
     }
 
     private Bitmap createBitmapFromGLSurface(int x, int y, int w, int h) {

@@ -33,8 +33,10 @@ Looper::Looper() {
     pthread_attr_t attr;
     pthread_attr_init(&attr);
 
-    pthread_create(&worker, &attr, trampoline, this);
+    // 先置位再启动线程，避免与线程中的读取产生竞争
     running = true;
+    pthread_create(&worker, &attr, trampoline, this);
+    pthread_attr_destroy(&attr);
 }
 
 Looper::~Looper() {

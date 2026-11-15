@@ -5,6 +5,42 @@
 #include <MyGLRenderContext.h>
 #include <EGLRender.h>
 #include "jni.h"
+#include <new>
+#include <AssetsDir.h>
+
+/*
+ * 把 Java byte[] 拷贝成 native 内存。
+ * - 数组为 null、长度不足 minSize 时返回 nullptr：原来直接按 Java 传入的宽高解释数据，
+ *   数组比宽高声明的小时，示例里 memcpy/glTexImage2D 会越界读；
+ * - 用 nothrow new：几十 MB 的 YUV 图分配失败时不应让 bad_alloc 直接终止进程。
+ * 这里用 GetByteArrayRegion 拷贝而不用 GetPrimitiveArrayCritical：拷贝之后要去拿渲染上下文的锁，
+ * critical 区内不能阻塞等待其它线程。
+ */
+static uint8_t *CopyByteArray(JNIEnv *env, jbyteArray array, size_t minSize, jsize *pLen)
+{
+	if (array == nullptr) return nullptr;
+	jsize len = env->GetArrayLength(array);
+	if (len <= 0 || static_cast<size_t>(len) < minSize)
+	{
+		LOGCATE("CopyByteArray invalid array length=%d, expect>=%zu", len, minSize);
+		return nullptr;
+	}
+	uint8_t *buf = new (std::nothrow) uint8_t[len];
+	if (buf == nullptr)
+	{
+		LOGCATE("CopyByteArray alloc %d bytes fail", len);
+		return nullptr;
+	}
+	env->GetByteArrayRegion(array, 0, len, reinterpret_cast<jbyte*>(buf));
+	if (env->ExceptionCheck())
+	{
+		// GetByteArrayRegion 失败会挂起 ArrayIndexOutOfBoundsException，交给 Java 层处理
+		delete[] buf;
+		return nullptr;
+	}
+	if (pLen) *pLen = len;
+	return buf;
+}
 
 #define NATIVE_RENDER_CLASS_NAME "com/byteflow/app/MyNativeRender"
 #define NATIVE_BG_RENDER_CLASS_NAME "com/byteflow/app/egl/NativeEglRender"
@@ -41,12 +77,16 @@ JNIEXPORT void JNICALL native_UnInit(JNIEnv *env, jobject instance)
 JNIEXPORT void JNICALL native_SetImageData
 (JNIEnv *env, jobject instance, jint format, jint width, jint height, jbyteArray imageData)
 {
-	int len = env->GetArrayLength (imageData);
-	uint8_t* buf = new uint8_t[len];
-	env->GetByteArrayRegion(imageData, 0, len, reinterpret_cast<jbyte*>(buf));
+	size_t expect = NativeImageUtil::GetImageSize(format, width, height);
+	if (expect == 0)
+	{
+		LOGCATE("native_SetImageData invalid image format=%d [w,h]=[%d,%d]", format, width, height);
+		return;
+	}
+	uint8_t* buf = CopyByteArray(env, imageData, expect, nullptr);
+	if (buf == nullptr) return;
 	MyGLRenderContext::GetInstance()->SetImageData(format, width, height, buf);
 	delete[] buf;
-	env->DeleteLocalRef(imageData);
 }
 
 /*
@@ -57,12 +97,16 @@ JNIEXPORT void JNICALL native_SetImageData
 JNIEXPORT void JNICALL native_SetImageDataWithIndex
 		(JNIEnv *env, jobject instance, jint index, jint format, jint width, jint height, jbyteArray imageData)
 {
-	int len = env->GetArrayLength (imageData);
-	uint8_t* buf = new uint8_t[len];
-	env->GetByteArrayRegion(imageData, 0, len, reinterpret_cast<jbyte*>(buf));
+	size_t expect = NativeImageUtil::GetImageSize(format, width, height);
+	if (expect == 0)
+	{
+		LOGCATE("native_SetImageDataWithIndex invalid image format=%d [w,h]=[%d,%d]", format, width, height);
+		return;
+	}
+	uint8_t* buf = CopyByteArray(env, imageData, expect, nullptr);
+	if (buf == nullptr) return;
 	MyGLRenderContext::GetInstance()->SetImageDataWithIndex(index, format, width, height, buf);
 	delete[] buf;
-	env->DeleteLocalRef(imageData);
 }
 
 /*
@@ -96,12 +140,18 @@ JNIEXPORT void JNICALL native_SetParamsFloat
 JNIEXPORT void JNICALL native_SetAudioData
 		(JNIEnv *env, jobject instance, jshortArray data)
 {
-    int len = env->GetArrayLength(data);
-    short *pShortBuf = new short[len];
-    env->GetShortArrayRegion(data, 0, len, reinterpret_cast<jshort*>(pShortBuf));
-	MyGLRenderContext::GetInstance()->SetParamsShortArr(pShortBuf, len);
-    delete[] pShortBuf;
-    env->DeleteLocalRef(data);
+	if (data == nullptr) return;
+	jsize len = env->GetArrayLength(data);
+	// 空数组时原来会在 SetParamsShortArr 的日志里读 pShortArr[0]，越界
+	if (len <= 0) return;
+	short *pShortBuf = new (std::nothrow) short[len];
+	if (pShortBuf == nullptr) return;
+	env->GetShortArrayRegion(data, 0, len, reinterpret_cast<jshort*>(pShortBuf));
+	if (!env->ExceptionCheck())
+	{
+		MyGLRenderContext::GetInstance()->SetParamsShortArr(pShortBuf, len);
+	}
+	delete[] pShortBuf;
 }
 
 /*
@@ -149,6 +199,21 @@ JNIEXPORT void JNICALL native_OnDrawFrame(JNIEnv *env, jobject instance)
 
 
 /*
+ * Class:     com_byteflow_app_MyNativeRender
+ * Method:    native_SetAssetsDir
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL native_SetAssetsDir(JNIEnv *env, jobject instance, jstring dir)
+{
+	if (dir == nullptr) return;
+	const char *pDir = env->GetStringUTFChars(dir, nullptr);
+	if (pDir == nullptr) return;  // OOM，异常已挂起
+	LOGCATD("native_SetAssetsDir dir=%s", pDir);
+	AssetsDir::Set(pDir);
+	env->ReleaseStringUTFChars(dir, pDir);
+}
+
+/*
  * Class:     com_byteflow_app_egl_NativeBgRender
  * Method:    native_EglRenderInit
  * Signature: ()V
@@ -166,14 +231,12 @@ JNIEXPORT void JNICALL native_EglRenderInit(JNIEnv *env, jobject instance)
  */
 JNIEXPORT void JNICALL native_EglRenderSetImageData(JNIEnv *env, jobject instance, jbyteArray data, jint width, jint height)
 {
-	int len = env->GetArrayLength (data);
-	uint8_t* buf = new uint8_t[len];
-	env->GetByteArrayRegion(data, 0, len, reinterpret_cast<jbyte*>(buf));
+	size_t expect = NativeImageUtil::GetImageSize(IMAGE_FORMAT_RGBA, width, height);
+	if (expect == 0) return;
+	uint8_t* buf = CopyByteArray(env, data, expect, nullptr);
+	if (buf == nullptr) return;
 	EGLRender::GetInstance()->SetImageData(buf, width, height);
 	delete[] buf;
-	env->DeleteLocalRef(data);
-
-
 }
 
 /*
@@ -223,6 +286,7 @@ static JNINativeMethod g_RenderMethods[] = {
 		{"native_OnSurfaceCreated",          "()V",       (void *)(native_OnSurfaceCreated)},
 		{"native_OnSurfaceChanged",          "(II)V",     (void *)(native_OnSurfaceChanged)},
 		{"native_OnDrawFrame",               "()V",       (void *)(native_OnDrawFrame)},
+		{"native_SetAssetsDir",              "(Ljava/lang/String;)V", (void *)(native_SetAssetsDir)},
 };
 
 static JNINativeMethod g_BgRenderMethods[] = {
@@ -242,7 +306,9 @@ static int RegisterNativeMethods(JNIEnv *env, const char *className, JNINativeMe
 		LOGCATE("RegisterNativeMethods fail. clazz == NULL");
 		return JNI_FALSE;
 	}
-	if (env->RegisterNatives(clazz, methods, methodNum) < 0)
+	jint ret = env->RegisterNatives(clazz, methods, methodNum);
+	env->DeleteLocalRef(clazz);
+	if (ret < 0)
 	{
 		LOGCATE("RegisterNativeMethods fail");
 		return JNI_FALSE;
@@ -257,12 +323,11 @@ static void UnregisterNativeMethods(JNIEnv *env, const char *className)
 	if (clazz == NULL)
 	{
 		LOGCATE("UnregisterNativeMethods fail. clazz == NULL");
+		env->ExceptionClear();
 		return;
 	}
-	if (env != NULL)
-	{
-		env->UnregisterNatives(clazz);
-	}
+	env->UnregisterNatives(clazz);
+	env->DeleteLocalRef(clazz);
 }
 
 // call this func when loading lib

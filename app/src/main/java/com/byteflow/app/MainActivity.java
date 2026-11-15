@@ -121,7 +121,6 @@ import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_YUV_TEXTURE_MAP;
 public class MainActivity extends AppCompatActivity implements AudioCollector.Callback, ViewTreeObserver.OnGlobalLayoutListener, SensorEventListener {
     private static final String TAG = "MainActivity";
     private static final String[] REQUEST_PERMISSIONS = {
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
             Manifest.permission.RECORD_AUDIO,
     };
     private static final int PERMISSION_REQUEST_CODE = 1;
@@ -206,6 +205,12 @@ public class MainActivity extends AppCompatActivity implements AudioCollector.Ca
         mRootView.getViewTreeObserver().addOnGlobalLayoutListener(this);
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         mGLRender.init();
+        // 资源目录统一由这里决定并传给 native，native 不再硬编码 /sdcard 路径
+        File assetsDir = getAssetsDir();
+        mGLRender.setAssetsDir(assetsDir.getAbsolutePath());
+        // 资源只需拷贝一次：原来在每次 onResume 都执行，且 Android 12 及以下要等到
+        // WRITE_EXTERNAL_STORAGE 授权后才拷贝；而应用私有目录（API 19+）根本不需要存储权限。
+        copyAssetsToSDCard(assetsDir);
 
     }
 
@@ -233,40 +238,17 @@ public class MainActivity extends AppCompatActivity implements AudioCollector.Ca
                 mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY),
                 SensorManager.SENSOR_DELAY_FASTEST);
 
-        // Android 13+ (API 33+) 已废弃 WRITE_EXTERNAL_STORAGE 权限
-        // 访问 getExternalFilesDir() 不需要任何权限
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            // Android 13+: 只请求录音权限
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSION_REQUEST_CODE);
-            }
-            // 无论是否有录音权限，都可以访问应用专属目录
-            copyAssetsToSDCard();
-        } else {
-            // Android 12 及以下：请求存储和录音权限
-            if (!hasPermissionsGranted(REQUEST_PERMISSIONS)) {
-                ActivityCompat.requestPermissions(this, REQUEST_PERMISSIONS, PERMISSION_REQUEST_CODE);
-            } else {
-                copyAssetsToSDCard();
-            }
+        // 资源都放在应用私有目录，不需要存储权限；只有音频可视化需要录音权限
+        if (!hasPermissionsGranted(REQUEST_PERMISSIONS)) {
+            ActivityCompat.requestPermissions(this, REQUEST_PERMISSIONS, PERMISSION_REQUEST_CODE);
         }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == PERMISSION_REQUEST_CODE) {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                // Android 13+: 文件复制已在 onResume 中执行，这里只处理录音权限被拒绝的情况
-                // 录音权限只在需要时使用，不影响基本功能
-            } else {
-                // Android 12 及以下：需要所有权限才能执行文件操作
-                if (hasPermissionsGranted(REQUEST_PERMISSIONS)) {
-                    copyAssetsToSDCard();
-                } else {
-                    Toast.makeText(this, "We need the permission: WRITE_EXTERNAL_STORAGE", Toast.LENGTH_SHORT).show();
-                }
+            if (!hasPermissionsGranted(REQUEST_PERMISSIONS)) {
+                Toast.makeText(this, "We need the permission: RECORD_AUDIO", Toast.LENGTH_SHORT).show();
             }
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -828,18 +810,27 @@ public class MainActivity extends AppCompatActivity implements AudioCollector.Ca
     /**
      * 将Assets中的文件复制到SDCard
      */
-    private void copyAssetsToSDCard() {
+    /**
+     * native 读写资源的目录：优先使用外部存储上的应用私有目录（便于 adb 查看调试输出），
+     * 外部存储不可用时回退到内部私有目录。两者都不需要任何存储权限，也不受分区存储限制。
+     */
+    private File getAssetsDir() {
+        File dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+        if (dir == null) {
+            dir = new File(getFilesDir(), Environment.DIRECTORY_DOWNLOADS);
+        }
+        if (!dir.exists() && !dir.mkdirs()) {
+            Log.e(TAG, "getAssetsDir: mkdirs fail " + dir);
+        }
+        return dir;
+    }
+
+    private void copyAssetsToSDCard(File assetsDir) {
         try {
-            ///sdcard/Android/data/com.byteflow.app/files/Download
-            File externalDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
-            if (externalDir != null) {
-                String fileDir = externalDir.getAbsolutePath();
-                CommonUtils.copyAssetsDirToSDCard(MainActivity.this, "poly", fileDir + "/model");
-                CommonUtils.copyAssetsDirToSDCard(MainActivity.this, "fonts", fileDir);
-                CommonUtils.copyAssetsDirToSDCard(MainActivity.this, "yuv", fileDir);
-            } else {
-                Toast.makeText(this, "无法访问外部存储目录", Toast.LENGTH_SHORT).show();
-            }
+            String fileDir = assetsDir.getAbsolutePath();
+            CommonUtils.copyAssetsDirToSDCard(MainActivity.this, "poly", fileDir + "/model");
+            CommonUtils.copyAssetsDirToSDCard(MainActivity.this, "fonts", fileDir);
+            CommonUtils.copyAssetsDirToSDCard(MainActivity.this, "yuv", fileDir);
         } catch (Exception e) {
             e.printStackTrace();
             Toast.makeText(this, "复制文件失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();

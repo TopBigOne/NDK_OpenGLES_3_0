@@ -29,6 +29,7 @@
 #include <ByteFlowLock.h>
 #include <LogUtil.h>
 #include <GLUtils.h>
+#include <AssetsDir.h>
 
 // ==================== 数学常量定义 ====================
 #define MATH_PI 3.1415926535897932384626433832802  // 圆周率 π
@@ -115,7 +116,9 @@
 #define SAMPLE_TYPE_SET_GRAVITY_XY              SAMPLE_TYPE + 1000  // 设置重力感应 XY
 
 // ==================== 资源路径定义 ====================
-#define DEFAULT_OGL_ASSETS_DIR "/sdcard/Android/data/com.byteflow.app/files/Download"  // 默认资源目录
+// 资源目录由 Java 层传入（见 util/AssetsDir.h），不再硬编码 /sdcard 路径。
+// 使用处只能当作运行期的 const char* 使用，不能再做字符串字面量拼接。
+#define DEFAULT_OGL_ASSETS_DIR (AssetsDir::Get())
 
 /**
  * @class GLSampleBase

@@ -41,6 +41,10 @@ public class MyGLRender implements GLSurfaceView.Renderer {
         mNativeRender.native_Init();
     }
 
+    public void setAssetsDir(String dir) {
+        mNativeRender.native_SetAssetsDir(dir);
+    }
+
     public void unInit() {
         mNativeRender.native_UnInit();
     }

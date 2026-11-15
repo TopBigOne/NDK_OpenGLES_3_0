@@ -29,9 +29,15 @@ GLuint GLUtils::LoadShader(GLenum shaderType, const char *pSource)
                         LOGCATE("GLUtils::LoadShader Could not compile shader %d:\n%s\n", shaderType, buf);
                         free(buf);
                     }
-                    glDeleteShader(shader);
-                    shader = 0;
                 }
+                else
+                {
+                    LOGCATE("GLUtils::LoadShader Could not compile shader %d (no info log)", shaderType);
+                }
+                // 原来只有 infoLen 非 0 时才删除并返回 0；驱动不给日志时会把编译失败的
+                // shader 当作成功返回，错误被推迟到链接阶段才暴露
+                glDeleteShader(shader);
+                shader = 0;
             }
         }
 	FUN_END_TIME("GLUtils::LoadShader")
@@ -45,7 +51,13 @@ GLuint GLUtils::CreateProgram(const char *pVertexShaderSource, const char *pFrag
         vertexShaderHandle = LoadShader(GL_VERTEX_SHADER, pVertexShaderSource);
         if (!vertexShaderHandle) return program;
         fragShaderHandle = LoadShader(GL_FRAGMENT_SHADER, pFragShaderSource);
-        if (!fragShaderHandle) return program;
+        if (!fragShaderHandle)
+        {
+            // 片段着色器编译失败时，已创建的顶点着色器原来会泄漏
+            glDeleteShader(vertexShaderHandle);
+            vertexShaderHandle = 0;
+            return program;
+        }
 
         program = glCreateProgram();
         if (program)
@@ -95,7 +107,13 @@ GLuint GLUtils::CreateProgramWithFeedback(const char *pVertexShaderSource, const
         if (!vertexShaderHandle) return program;
 
         fragShaderHandle = LoadShader(GL_FRAGMENT_SHADER, pFragShaderSource);
-        if (!fragShaderHandle) return program;
+        if (!fragShaderHandle)
+        {
+            // 片段着色器编译失败时，已创建的顶点着色器原来会泄漏
+            glDeleteShader(vertexShaderHandle);
+            vertexShaderHandle = 0;
+            return program;
+        }
 
         program = glCreateProgram();
         if (program)
@@ -150,9 +168,21 @@ GLuint GLUtils::CreateProgramWithGeometryShader(const char *pVertexShaderSource,
         vertexShaderHandle = LoadShader(GL_VERTEX_SHADER, pVertexShaderSource);
         if (!vertexShaderHandle) return program;
         fragShaderHandle = LoadShader(GL_FRAGMENT_SHADER, pFragShaderSource);
-        if (!fragShaderHandle) return program;
+        if (!fragShaderHandle)
+        {
+            // 片段着色器编译失败时，已创建的顶点着色器原来会泄漏
+            glDeleteShader(vertexShaderHandle);
+            vertexShaderHandle = 0;
+            return program;
+        }
         geometryShaderHandle = LoadShader(GL_GEOMETRY_SHADER, pGeometryShaderSource);
-        if (!geometryShaderHandle) return program;
+        if (!geometryShaderHandle)
+        {
+            // 几何着色器失败时前两个 shader 原来都会泄漏
+            glDeleteShader(vertexShaderHandle);
+            glDeleteShader(fragShaderHandle);
+            return program;
+        }
         program = glCreateProgram();
         if (program)
         {
@@ -321,6 +351,7 @@ GLuint GLUtils::LoadComputeShader(const char* computeShaderSource) {
         GLchar infoLog[512];
         glGetShaderInfoLog(computeShader, 512, NULL, infoLog);
         LOGCATE("GLUtils::LoadComputeShader Compute shader compilation failed: %s", infoLog);
+        glDeleteShader(computeShader);  // 原来失败路径会泄漏 shader
         return 0;
     }
 
@@ -329,13 +360,16 @@ GLuint GLUtils::LoadComputeShader(const char* computeShaderSource) {
     glLinkProgram(computeProgram);
 
     glGetProgramiv(computeProgram, GL_LINK_STATUS, &success);
+    // 链接完成后 shader 已不再需要，无论成功与否都删除（原来链接失败时 shader 和 program 都泄漏）
+    glDetachShader(computeProgram, computeShader);
+    glDeleteShader(computeShader);
     if (!success) {
         GLchar infoLog[512];
         glGetProgramInfoLog(computeProgram, 512, NULL, infoLog);
         LOGCATE("GLUtils::LoadComputeShader Compute shader linking failed: %s", infoLog);
+        glDeleteProgram(computeProgram);
         return 0;
     }
 
-    glDeleteShader(computeShader);
     return computeProgram;
 }

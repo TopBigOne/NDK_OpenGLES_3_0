@@ -15,23 +15,27 @@ public class CommonUtils {
         try {
             String list[] = context.getAssets().list(assetsDirName);
             if (list.length == 0) {
-                InputStream inputStream = context.getAssets().open(assetsDirName);
-                byte[] mByte = new byte[1024];
-                int bt = 0;
                 File file = new File(sdCardPath + File.separator
-                        + assetsDirName.substring(assetsDirName.lastIndexOf('/')));
-                if (!file.exists()) {
-                    file.createNewFile();
-                } else {
+                        + assetsDirName.substring(assetsDirName.lastIndexOf('/') + 1));
+                if (file.exists()) {
                     return;
                 }
-                FileOutputStream fos = new FileOutputStream(file);
-                while ((bt = inputStream.read(mByte)) != -1) {
-                    fos.write(mByte, 0, bt);
+                // 先写临时文件，完整写完再改名：原来直接写目标文件，拷贝中途进程被杀会留下
+                // 截断的文件，之后因为“文件已存在”永远不会再修复，native 读到的是残缺数据。
+                File tmp = new File(file.getPath() + ".tmp");
+                byte[] mByte = new byte[64 * 1024];
+                int bt;
+                try (InputStream inputStream = context.getAssets().open(assetsDirName);
+                     FileOutputStream fos = new FileOutputStream(tmp)) {
+                    while ((bt = inputStream.read(mByte)) != -1) {
+                        fos.write(mByte, 0, bt);
+                    }
+                    fos.flush();
                 }
-                fos.flush();
-                inputStream.close();
-                fos.close();
+                if (!tmp.renameTo(file)) {
+                    Log.e(TAG, "copyAssetsDirToSDCard rename fail: " + file);
+                    tmp.delete();
+                }
             } else {
                 String subDirName = assetsDirName;
                 if (assetsDirName.contains("/")) {

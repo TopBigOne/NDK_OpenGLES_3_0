@@ -63,8 +63,9 @@ bool EglCore::init(EGLContext sharedContext, int flags) {
             };
             EGLContext context = eglCreateContext(mEGLDisplay, config,
                                                   sharedContext, attrib3_list);
+            // 原来先 checkEglError（会清掉错误码）再 eglGetError，判断恒为成功；直接看返回值
             checkEglError("eglCreateContext");
-            if (eglGetError() == EGL_SUCCESS) {
+            if (context != EGL_NO_CONTEXT) {
                 mEGLConfig = config;
                 mEGLContext = context;
                 mGlVersion = 3;
@@ -74,7 +75,10 @@ bool EglCore::init(EGLContext sharedContext, int flags) {
     // 如果GLES3没有获取到，则尝试使用GLES2
     if (mEGLContext == EGL_NO_CONTEXT) {
         EGLConfig config = getConfig(flags, 2);
-        assert(config != NULL);
+        if (config == NULL) {
+            LOGCATE("EglCore::init no suitable EGLConfig");
+            return false;
+        }
         int attrib2_list[] = {
                 EGL_CONTEXT_CLIENT_VERSION, 2,
                 EGL_NONE
@@ -82,7 +86,7 @@ bool EglCore::init(EGLContext sharedContext, int flags) {
         EGLContext context = eglCreateContext(mEGLDisplay, config,
                                               sharedContext, attrib2_list);
         checkEglError("eglCreateContext");
-        if (eglGetError() == EGL_SUCCESS) {
+        if (context != EGL_NO_CONTEXT) {
             mEGLConfig = config;
             mEGLContext = context;
             mGlVersion = 2;
@@ -132,8 +136,9 @@ EGLConfig EglCore::getConfig(int flags, int version) {
         attribList[length - 2] = 1;
     }
     EGLConfig configs = NULL;
-    int numConfigs;
-    if (!eglChooseConfig(mEGLDisplay, attribList, &configs, 1, &numConfigs)) {
+    int numConfigs = 0;
+    // eglChooseConfig 成功但没有匹配配置时 numConfigs 为 0，原来会返回未设置的 config
+    if (!eglChooseConfig(mEGLDisplay, attribList, &configs, 1, &numConfigs) || numConfigs <= 0) {
         LOGCATE("unable to find RGB8888 / %d  EGLConfig", version);
         return NULL;
     }
@@ -289,8 +294,9 @@ bool EglCore::isCurrent(EGLSurface eglSurface) {
  * @return
  */
 int EglCore::querySurface(EGLSurface eglSurface, int what) {
-    int value;
-    eglQuerySurface(mEGLContext, eglSurface, what, &value);
+    int value = -1;
+    // 第一个参数应为 EGLDisplay，原来误传了 EGLContext
+    eglQuerySurface(mEGLDisplay, eglSurface, what, &value);
     return value;
 }
 

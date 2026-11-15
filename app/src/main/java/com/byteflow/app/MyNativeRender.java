@@ -104,4 +104,10 @@ public class MyNativeRender {
     public native void native_OnSurfaceChanged(int width, int height);
 
     public native void native_OnDrawFrame();
+
+    /**
+     * 设置 native 侧读写资源文件的目录（模型、字体、YUV 图、调试输出等）。
+     * 必须是应用私有目录的真实路径，避免硬编码 /sdcard 路径在多用户、分区存储下失效。
+     */
+    public native void native_SetAssetsDir(String dir);
 }

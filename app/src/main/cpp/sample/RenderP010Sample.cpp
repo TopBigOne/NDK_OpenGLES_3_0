@@ -9,7 +9,9 @@
 #include "RenderP010Sample.h"
 #include "YUVP010Example.h"
 
-#define IMAGE_PATH "/sdcard/Android/data/com.byteflow.app/files/Download/yuv/IMAGE_4406x3108.P010"
+#include <string>
+// 原来硬编码 /sdcard/... 路径，现在由 Java 传入的资源目录拼出（见 util/AssetsDir.h）
+#define IMAGE_PATH ((std::string(DEFAULT_OGL_ASSETS_DIR) + "/yuv/IMAGE_4406x3108.P010").c_str())
 
 void RenderP010Sample::LoadImage(NativeImage *pImage)
 {

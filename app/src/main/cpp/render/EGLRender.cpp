@@ -321,6 +321,21 @@ EGLRender::EGLRender()
 
 	m_IsGLContextReady = false;
 	m_ShaderIndex = 0;
+
+	// 原来 EGL 句柄未初始化，CreateGlesEnv 中途失败后 DestroyGlesEnv 会使用随机值
+	m_eglConf = nullptr;
+	m_eglSurface = EGL_NO_SURFACE;
+	m_eglCtx = EGL_NO_CONTEXT;
+	m_eglDisplay = EGL_NO_DISPLAY;
+
+	// 原来着色器表在 Init 里才填充，Init 之前（或 Init 失败后）调用 SetIntParams 会读到野指针
+	m_fShaderStrs[0] = fShaderStr0;
+	m_fShaderStrs[1] = fShaderStr1;
+	m_fShaderStrs[2] = fShaderStr2;
+	m_fShaderStrs[3] = fShaderStr3;
+	m_fShaderStrs[4] = fShaderStr4;
+	m_fShaderStrs[5] = fShaderStr5;
+	m_fShaderStrs[6] = fShaderStr7;
 }
 
 EGLRender::~EGLRender()
@@ -336,19 +351,20 @@ EGLRender::~EGLRender()
 void EGLRender::Init()
 {
 	LOGCATD("EGLRender::Init");
+	// 单例在 Activity 重建时会被再次 Init：已经初始化时直接返回，避免重复创建 EGL 环境而泄漏
+	if (m_IsGLContextReady) return;
+
 	if (CreateGlesEnv() == 0)
 	{
 		m_IsGLContextReady = true;
 	}
+	else
+	{
+		// 清理创建到一半的 EGL 对象
+		DestroyGlesEnv();
+	}
 
 	if(!m_IsGLContextReady) return;
-	m_fShaderStrs[0] = fShaderStr0;
-	m_fShaderStrs[1] = fShaderStr1;
-	m_fShaderStrs[2] = fShaderStr2;
-	m_fShaderStrs[3] = fShaderStr3;
-	m_fShaderStrs[4] = fShaderStr4;
-	m_fShaderStrs[5] = fShaderStr5;
-	m_fShaderStrs[6] = fShaderStr7;
 
 
 	glGenTextures(1, &m_ImageTextureId);
@@ -432,7 +448,8 @@ int EGLRender::CreateGlesEnv()
 
 	// EGL context attributes
     const EGLint ctxAttr[] = {
-            EGL_CONTEXT_CLIENT_VERSION, 2,
+            // 配置要求 EGL_OPENGL_ES3_BIT_KHR、着色器是 300 es，上下文也必须请求 ES 3
+            EGL_CONTEXT_CLIENT_VERSION, 3,
             EGL_NONE
     };
 
@@ -471,7 +488,7 @@ int EGLRender::CreateGlesEnv()
 		LOGCATD("EGLRender::CreateGlesEnv EGL init with version %d.%d", eglMajVers, eglMinVers);
 
 		//3. 获取 EGLConfig 对象，确定渲染表面的配置信息
-		if(!eglChooseConfig(m_eglDisplay, confAttr, &m_eglConf, 1, &numConfigs))
+		if(!eglChooseConfig(m_eglDisplay, confAttr, &m_eglConf, 1, &numConfigs) || numConfigs <= 0)
 		{
 			LOGCATE("EGLRender::CreateGlesEnv some config is wrong");
 			resultCode = -1;
@@ -486,7 +503,7 @@ int EGLRender::CreateGlesEnv()
 			{
 				case EGL_BAD_ALLOC:
 					// Not enough resources available. Handle and recover
-					LOGCATD("EGLRender::CreateGlesEnv Not enough resources available");
+					LOGCATE("EGLRender::CreateGlesEnv Not enough resources available");
 					break;
 				case EGL_BAD_CONFIG:
 					// Verify that provided EGLConfig is valid
@@ -500,23 +517,22 @@ int EGLRender::CreateGlesEnv()
 				case EGL_BAD_MATCH:
 					// Check window and EGLConfig attributes to determine
 					// compatibility and pbuffer-texture parameters
-					LOGCATD("EGLRender::CreateGlesEnv Check window and EGLConfig attributes");
+					LOGCATE("EGLRender::CreateGlesEnv Check window and EGLConfig attributes");
 					break;
 			}
+			// 原来 surface 创建失败后继续执行，最终 eglMakeCurrent 失败却难以定位原因
+			resultCode = -1;
+			break;
 		}
 
 		//5. 创建渲染上下文 EGLContext
 		m_eglCtx = eglCreateContext(m_eglDisplay, m_eglConf, EGL_NO_CONTEXT, ctxAttr);
 		if(m_eglCtx == EGL_NO_CONTEXT)
 		{
-			EGLint error = eglGetError();
-			if(error == EGL_BAD_CONFIG)
-			{
-				// Handle error and recover
-				LOGCATD("EGLRender::CreateGlesEnv EGL_BAD_CONFIG");
-				resultCode = -1;
-				break;
-			}
+			// 原来只有 EGL_BAD_CONFIG 才视为失败，其它错误会带着无效上下文继续执行
+			LOGCATE("EGLRender::CreateGlesEnv eglCreateContext fail, error=0x%x", eglGetError());
+			resultCode = -1;
+			break;
 		}
 
 		//6. 绑定上下文
@@ -562,18 +578,19 @@ void EGLRender::SetImageData(uint8_t *pData, int width, int height)
 
 		if (m_FboId == GL_NONE)
 		{
-			// Create FBO
 			glGenFramebuffers(1, &m_FboId);
-			glBindFramebuffer(GL_FRAMEBUFFER, m_FboId);
-			glBindTexture(GL_TEXTURE_2D, m_FboTextureId);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_FboTextureId, 0);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImage.width, m_RenderImage.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-			if (glCheckFramebufferStatus(GL_FRAMEBUFFER)!= GL_FRAMEBUFFER_COMPLETE) {
-				LOGCATE("EGLRender::SetImageData glCheckFramebufferStatus status != GL_FRAMEBUFFER_COMPLETE");
-			}
-			glBindTexture(GL_TEXTURE_2D, GL_NONE);
-			glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
 		}
+		// 原来 FBO 纹理只在第一次按首张图的尺寸分配，之后传入不同尺寸的图时
+		// 渲染目标仍是旧尺寸，读回的像素与图像尺寸不符。每次都按当前图像尺寸重新指定。
+		glBindFramebuffer(GL_FRAMEBUFFER, m_FboId);
+		glBindTexture(GL_TEXTURE_2D, m_FboTextureId);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImage.width, m_RenderImage.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_FboTextureId, 0);
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER)!= GL_FRAMEBUFFER_COMPLETE) {
+			LOGCATE("EGLRender::SetImageData glCheckFramebufferStatus status != GL_FRAMEBUFFER_COMPLETE");
+		}
+		glBindTexture(GL_TEXTURE_2D, GL_NONE);
+		glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
 
 	}
 
@@ -586,7 +603,8 @@ void EGLRender::SetIntParams(int paramType, int param)
 	{
 		case PARAM_TYPE_SHADER_INDEX:
 		{
-			if (param >= 0)
+			// 没有 GL 上下文时不能调用任何 GL 函数
+			if (param >= 0 && m_IsGLContextReady)
 			{
 				m_ShaderIndex = param % EGL_FEATURE_NUM;
 
@@ -621,7 +639,8 @@ void EGLRender::SetIntParams(int paramType, int param)
 void EGLRender::Draw()
 {
 	LOGCATV("EGLRender::Draw");
-	if (m_ProgramObj == GL_NONE) return;
+	// 没有图像（FBO 未创建）时绘制到 1x1 的 pbuffer 没有意义，读回的也不是结果
+	if (!m_IsGLContextReady || m_ProgramObj == GL_NONE || m_FboId == GL_NONE) return;
 	glViewport(0, 0, m_RenderImage.width, m_RenderImage.height);
 
 	// Do FBO off screen rendering
