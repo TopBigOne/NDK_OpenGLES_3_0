@@ -21,7 +21,7 @@ FullScreenTriangleSample::~FullScreenTriangleSample()
 	NativeImageUtil::FreeNativeImage(&m_RenderImage);
 }
 
-void FullScreenTriangleSample::Init()
+bool FullScreenTriangleSample::Init()
 {
 	//create RGBA texture
 	glGenTextures(1, &m_TextureId);
@@ -61,12 +61,14 @@ void FullScreenTriangleSample::Init()
 	else
 	{
 		LOGCATE("FullScreenTriangleSample::Init create program fail");
+		return false;
 	}
 
     glBindTexture(GL_TEXTURE_2D, m_TextureId);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImage.width, m_RenderImage.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);
     glBindTexture(GL_TEXTURE_2D, GL_NONE);
 
+	return true;
 }
 
 void FullScreenTriangleSample::Draw(int screenW, int screenH)
@@ -101,11 +103,7 @@ void FullScreenTriangleSample::LoadImage(NativeImage *pImage)
 
 void FullScreenTriangleSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteTextures(1, &m_TextureId);
-		m_ProgramObj = GL_NONE;
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteTexture(m_TextureId);
 
 }

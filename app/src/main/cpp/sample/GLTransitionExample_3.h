@@ -27,7 +27,7 @@ public:
 
     virtual void LoadMultiImageWithIndex(int index, NativeImage *pImage);
 
-	virtual void Init();
+	virtual bool Init();
 	virtual void Draw(int screenW, int screenH);
 
 	virtual void Destroy();

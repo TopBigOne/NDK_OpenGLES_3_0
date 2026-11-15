@@ -33,6 +33,10 @@ MRTSample::MRTSample()
 	m_ScaleY = 1.0f;
 
     m_MRTProgramObj = GL_NONE;
+	// Init 失败后基类会调用 Destroy，Destroy 会读取所有句柄，因此必须在构造时清零
+	m_FBO = GL_NONE;
+	for (int i = 0; i < ATTACHMENT_NUM; ++i) m_AttachTexIds[i] = GL_NONE;
+	for (int i = 0; i < 3; ++i) m_VboIds[i] = GL_NONE;
 }
 
 MRTSample::~MRTSample()
@@ -41,10 +45,9 @@ MRTSample::~MRTSample()
 
 }
 
-void MRTSample::Init()
+bool MRTSample::Init()
 {
-	if(m_ProgramObj)
-		return;
+	// 是否已初始化由 GLSampleBase 管理，这里不再自行判断
 	//create RGBA texture
 	glGenTextures(1, &m_TextureId);
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
@@ -115,7 +118,7 @@ void MRTSample::Init()
 
 	m_MRTProgramObj = GLUtils::CreateProgram(vShaderStr, fMRTShaderStr);
     m_ProgramObj = GLUtils::CreateProgram(vShaderStr, fShaderStr);
-	if (m_MRTProgramObj)
+	if (m_MRTProgramObj && m_ProgramObj)
 	{
 		m_SamplerLoc = glGetUniformLocation(m_MRTProgramObj, "s_Texture");
 		m_MVPMatLoc = glGetUniformLocation(m_MRTProgramObj, "u_MVPMatrix");
@@ -123,6 +126,7 @@ void MRTSample::Init()
 	else
 	{
 		LOGCATE("MRTSample::Init create program fail");
+		return false;
 	}
 
 	GLfloat verticesCoords[] = {
@@ -176,8 +180,13 @@ void MRTSample::Init()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImage.width, m_RenderImage.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
 
-	LOGCATD("MRTSample::Init InitFBO = %d", InitFBO());
-
+	// 原来只把 InitFBO 的结果打进日志，FBO 不完整时仍继续渲染；现在作为 Init 失败处理
+	if (!InitFBO())
+	{
+		LOGCATE("MRTSample::Init InitFBO fail");
+		return false;
+	}
+	return true;
 }
 
 void MRTSample::LoadImage(NativeImage *pImage)
@@ -243,15 +252,14 @@ void MRTSample::Draw(int screenW, int screenH)
 
 void MRTSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-        glDeleteProgram(m_MRTProgramObj);
-		glDeleteBuffers(3, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(1, &m_TextureId);
-		glDeleteTextures(ATTACHMENT_NUM, m_AttachTexIds);
-	}
+	// 各对象独立释放并清零；原实现漏删了 InitFBO 创建的 m_FBO
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteProgram(m_MRTProgramObj);
+	GLUtils::DeleteBuffers(3, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteTexture(m_TextureId);
+	GLUtils::DeleteTextures(ATTACHMENT_NUM, m_AttachTexIds);
+	GLUtils::DeleteFramebuffer(m_FBO);
 }
 
 /**

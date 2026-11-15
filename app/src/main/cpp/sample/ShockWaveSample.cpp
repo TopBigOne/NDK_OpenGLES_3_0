@@ -14,6 +14,7 @@ ShockWaveSample::ShockWaveSample()
 {
 	m_TextureId = GL_NONE;
 	m_VaoId = GL_NONE;
+	m_VboIds[0] = m_VboIds[1] = m_VboIds[2] = GL_NONE;
 
 	m_AngleX = 0;
 	m_AngleY = 0;
@@ -32,10 +33,8 @@ ShockWaveSample::~ShockWaveSample()
 
 }
 
-void ShockWaveSample::Init()
+bool ShockWaveSample::Init()
 {
-	if(m_ProgramObj)
-		return;
 	//create RGBA texture
 	glGenTextures(1, &m_TextureId);
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
@@ -87,9 +86,11 @@ void ShockWaveSample::Init()
 			"}";
 
 	m_ProgramObj = GLUtils::CreateProgram(vShaderStr, fShaderStr, m_VertexShader, m_FragmentShader);
-	if (m_ProgramObj)
+	// 原来的判断写反了（成功时打印失败日志、失败时继续执行），这里改为失败即返回
+	if (!m_ProgramObj)
 	{
 		LOGCATE("ShockWaveSample::Init create program fail");
+		return false;
 	}
 
 	GLfloat verticesCoords[] = {
@@ -142,7 +143,7 @@ void ShockWaveSample::Init()
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImage.width, m_RenderImage.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
-
+	return true;
 }
 
 void ShockWaveSample::LoadImage(NativeImage *pImage)
@@ -192,13 +193,10 @@ void ShockWaveSample::Draw(int screenW, int screenH)
 
 void ShockWaveSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(3, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(1, &m_TextureId);
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteBuffers(3, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteTexture(m_TextureId);
 }
 
 

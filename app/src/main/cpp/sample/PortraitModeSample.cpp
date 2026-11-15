@@ -15,8 +15,13 @@
 PortraitModeSample::PortraitModeSample()
 {
 	m_ProgramObj = GL_NONE;
-	m_VaoIds[0] = GL_NONE;
-	m_VboIds[0] = GL_NONE;
+	// Init 失败后基类会调用 Destroy，Destroy 会读取所有句柄，因此每个句柄都要在构造时清零
+	m_VaoIds[0] = m_VaoIds[1] = GL_NONE;
+	m_VboIds[0] = m_VboIds[1] = m_VboIds[2] = m_VboIds[3] = GL_NONE;
+	m_BlendProgramObj = GL_NONE;
+	m_CircleBokehProgramObj = GL_NONE;
+	m_FastGaussianBlurProgramObj = GL_NONE;
+	m_PortraitTexId = GL_NONE;
 
 	m_SrcTexId = GL_NONE;
 	m_FboTextureId = GL_NONE;
@@ -42,9 +47,9 @@ void PortraitModeSample::LoadMultiImageWithIndex(int index, NativeImage *pImage)
 	}
 }
 
-void PortraitModeSample::Init()
+bool PortraitModeSample::Init()
 {
-	if(m_ProgramObj) return;
+	// 是否已初始化由 GLSampleBase 管理，这里不再自行判断
 	//顶点坐标
 	GLfloat vVertices[] = {
 			-1.0f, -1.0f, 0.0f,
@@ -99,10 +104,12 @@ void PortraitModeSample::Init()
 	m_BlendProgramObj = GLUtils::CreateProgram(vShaderStr, fBlendShaderStr);
 	m_CircleBokehProgramObj = GLUtils::CreateProgram(vShaderStr, fCircleBokehShaderStr);
 	m_FastGaussianBlurProgramObj = GLUtils::CreateProgram(vShaderStr, fFastGaussianBlurStr);
-	if (m_ProgramObj == GL_NONE)
+	// 四个 program 都会在 Draw 中使用，任何一个失败都视为初始化失败
+	if (m_ProgramObj == GL_NONE || m_BlendProgramObj == GL_NONE
+		|| m_CircleBokehProgramObj == GL_NONE || m_FastGaussianBlurProgramObj == GL_NONE)
 	{
-		LOGCATD("PortraitModeSample::Init m_ProgramObj == GL_NONE");
-		return;
+		LOGCATE("PortraitModeSample::Init create program fail");
+		return false;
 	}
 
 	// 生成 VBO ，加载顶点数据和索引数据
@@ -185,9 +192,9 @@ void PortraitModeSample::Init()
 	if (!CreateFrameBufferObj())
 	{
 		LOGCATE("PortraitModeSample::Init CreateFrameBufferObj fail");
-		return;
+		return false;
 	}
-
+	return true;
 }
 
 void PortraitModeSample::Draw(int screenW, int screenH)
@@ -213,39 +220,18 @@ void PortraitModeSample::Draw(int screenW, int screenH)
 
 void PortraitModeSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteProgram(m_BlendProgramObj);
-		glDeleteProgram(m_CircleBokehProgramObj);
-		glDeleteProgram(m_FastGaussianBlurProgramObj);
-	}
-
-	if (m_SrcTexId)
-	{
-		glDeleteTextures(1, &m_SrcTexId);
-	}
-
-	if (m_FboTextureId)
-	{
-		glDeleteTextures(1, &m_FboTextureId);
-	}
-
-	if (m_VboIds[0])
-	{
-		glDeleteBuffers(4, m_VboIds);
-	}
-
-	if (m_VaoIds[0])
-	{
-		glDeleteVertexArrays(2, m_VaoIds);
-	}
-
-	if (m_FboId)
-	{
-		glDeleteFramebuffers(1, &m_FboId);
-	}
-
+	// 各对象独立释放并清零；原实现漏删了人像遮罩纹理 m_PortraitTexId，
+	// 且只要主 program 为 0 就不删其余三个 program
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteProgram(m_BlendProgramObj);
+	GLUtils::DeleteProgram(m_CircleBokehProgramObj);
+	GLUtils::DeleteProgram(m_FastGaussianBlurProgramObj);
+	GLUtils::DeleteTexture(m_SrcTexId);
+	GLUtils::DeleteTexture(m_PortraitTexId);
+	GLUtils::DeleteTexture(m_FboTextureId);
+	GLUtils::DeleteBuffers(4, m_VboIds);
+	GLUtils::DeleteVertexArrays(2, m_VaoIds);
+	GLUtils::DeleteFramebuffer(m_FboId);
 }
 
 bool PortraitModeSample::CreateFrameBufferObj()

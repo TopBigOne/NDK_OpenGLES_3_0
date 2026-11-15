@@ -70,6 +70,9 @@ ScratchCardSample::ScratchCardSample() {
 
     m_TextureId = GL_NONE;
     m_VaoId = GL_NONE;
+    // Draw 中用 m_VboIds[0] == GL_NONE 判断是否需要懒创建 VBO，原来未初始化，
+    // 可能拿着随机值直接当 buffer 名使用；Destroy 也依赖它为 0
+    m_VboIds[0] = m_VboIds[1] = GL_NONE;
 
     m_AngleX = 0;
     m_AngleY = 0;
@@ -86,9 +89,7 @@ ScratchCardSample::~ScratchCardSample() {
 
 }
 
-void ScratchCardSample::Init() {
-    if (m_ProgramObj)
-        return;
+bool ScratchCardSample::Init() {
 
     //create RGBA texture
     glGenTextures(1, &m_TextureId);
@@ -128,6 +129,7 @@ void ScratchCardSample::Init() {
         m_MVPMatLoc = glGetUniformLocation(m_ProgramObj, "u_MVPMatrix");
     } else {
         LOGCATE("ScratchCardSample::Init create program fail");
+        return false;
     }
 
     //upload RGBA image data
@@ -136,7 +138,7 @@ void ScratchCardSample::Init() {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImage.width, m_RenderImage.height, 0, GL_RGBA,
                  GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);
     glBindTexture(GL_TEXTURE_2D, GL_NONE);
-
+    return true;
 }
 
 void ScratchCardSample::LoadImage(NativeImage *pImage) {
@@ -222,12 +224,11 @@ void ScratchCardSample::Draw(int screenW, int screenH) {
 }
 
 void ScratchCardSample::Destroy() {
-    if (m_ProgramObj) {
-        glDeleteProgram(m_ProgramObj);
-        glDeleteBuffers(2, m_VboIds);
-        glDeleteVertexArrays(1, &m_VaoId);
-        glDeleteTextures(1, &m_TextureId);
-    }
+    GLUtils::DeleteProgram(m_ProgramObj);
+    // VBO/VAO 在 Draw 中懒创建，清零后下一次 Draw 会重新创建
+    GLUtils::DeleteBuffers(2, m_VboIds);
+    GLUtils::DeleteVertexArray(m_VaoId);
+    GLUtils::DeleteTexture(m_TextureId);
 }
 
 

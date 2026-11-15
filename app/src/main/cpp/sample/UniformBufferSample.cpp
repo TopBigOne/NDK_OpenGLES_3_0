@@ -18,6 +18,9 @@ UniformBufferSample::UniformBufferSample()
 
 	m_TextureId = GL_NONE;
 	m_VaoId = GL_NONE;
+	// Init 失败时基类会调用 Destroy，句柄必须有确定的初值
+	m_UboId = GL_NONE;
+	m_VboIds[0] = m_VboIds[1] = m_VboIds[2] = GL_NONE;
 
 	m_AngleX = 0;
 	m_AngleY = 0;
@@ -32,10 +35,8 @@ UniformBufferSample::~UniformBufferSample()
 
 }
 
-void UniformBufferSample::Init()
+bool UniformBufferSample::Init()
 {
-	if(m_ProgramObj)
-		return;
 	//create RGBA texture
 	glGenTextures(1, &m_TextureId);
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
@@ -81,6 +82,7 @@ void UniformBufferSample::Init()
 	else
 	{
 		LOGCATE("UniformBufferSample::Init create program fail");
+		return false;
 	}
 
 	GLfloat verticesCoords[] = {
@@ -144,6 +146,7 @@ void UniformBufferSample::Init()
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     glBindBufferRange(GL_UNIFORM_BUFFER, 0, m_UboId, 0, 3 * sizeof(glm::mat4));
 
+	return true;
 }
 
 void UniformBufferSample::LoadImage(NativeImage *pImage)
@@ -188,14 +191,11 @@ void UniformBufferSample::Draw(int screenW, int screenH)
 
 void UniformBufferSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(3, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(1, &m_TextureId);
-		glDeleteBuffers(1, &m_UboId);
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteBuffers(3, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteTexture(m_TextureId);
+	GLUtils::DeleteBuffer(m_UboId);
 }
 
 

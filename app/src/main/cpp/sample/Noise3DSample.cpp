@@ -438,12 +438,8 @@ Noise3DSample::~Noise3DSample()
 
 }
 
-void Noise3DSample::Init()
+bool Noise3DSample::Init()
 {
-	if (m_ProgramObj)
-	{
-		return;
-	}
 
 	char vShaderStr[] =
 			"#version 300 es\n"
@@ -516,13 +512,19 @@ void Noise3DSample::Init()
 	else
 	{
 		LOGCATE("Noise3DSample::Init create program fail");
-		return;
+		return false;
 	}
 
 	Create3DNoiseTexture(m_TextureId);
 
-	m_VertexData.indicesNum = GenCubeVertexData(3.0, &m_VertexData.pVertices, nullptr,
-												&m_VertexData.pTexCoords, &m_VertexData.pIndices);
+	// 顶点数据是纯 CPU 数据，与 GL 上下文无关，只生成一次（析构时释放）；
+	// 上下文重建后再次 Init 时如果重新 malloc，会把上一次的缓冲泄漏掉。
+	if (m_VertexData.pVertices == nullptr)
+	{
+		m_VertexData.indicesNum = GenCubeVertexData(3.0, &m_VertexData.pVertices, nullptr,
+													&m_VertexData.pTexCoords, &m_VertexData.pIndices);
+	}
+	return true;
 }
 
 void Noise3DSample::LoadImage(NativeImage *pImage)
@@ -588,14 +590,8 @@ void Noise3DSample::Draw(int screenW, int screenH)
 
 void Noise3DSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteTextures(1, &m_TextureId);
-
-		m_ProgramObj = GL_NONE;
-		m_TextureId = GL_NONE;
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteTexture(m_TextureId);
 
 }
 

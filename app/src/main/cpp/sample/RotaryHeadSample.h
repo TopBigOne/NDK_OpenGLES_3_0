@@ -31,7 +31,7 @@ public:
 
 	virtual void LoadImage(NativeImage *pImage);
 
-	virtual void Init();
+	virtual bool Init();
 	virtual void Draw(int screenW, int screenH);
 
 	virtual void Destroy();

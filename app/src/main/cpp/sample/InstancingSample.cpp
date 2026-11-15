@@ -22,7 +22,7 @@ InstancingSample::~InstancingSample()
 {
 }
 
-void InstancingSample::Init()
+bool InstancingSample::Init()
 {
 
 	char vShaderStr[] =
@@ -50,6 +50,11 @@ void InstancingSample::Init()
 			"}                                            \n";
 
 	m_ProgramObj = GLUtils::CreateProgram(vShaderStr, fShaderStr, m_VertexShader, m_FragmentShader);
+	if (m_ProgramObj == GL_NONE)
+	{
+		LOGCATE("InstancingSample::Init create program fail");
+		return false;
+	}
 
 	GLfloat vVertices[] = {
 			// Positions     // Colors
@@ -100,7 +105,7 @@ void InstancingSample::Init()
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glVertexAttribDivisor(2, 1); // Tell OpenGL this is an instanced vertex attribute.
 	glBindVertexArray(0);
-
+	return true;
 }
 
 void InstancingSample::Draw(int screenW, int screenH)
@@ -125,24 +130,9 @@ void InstancingSample::Draw(int screenW, int screenH)
 
 void InstancingSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-	}
-
-	if (m_InstanceVbo)
-	{
-		glDeleteBuffers(1, &m_InstanceVbo);
-	}
-
-	if (m_VerticesVbo)
-	{
-		glDeleteBuffers(1, &m_VerticesVbo);
-	}
-
-	if (m_Vao)
-	{
-		glDeleteVertexArrays(1, &m_Vao);
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteBuffer(m_InstanceVbo);
+	GLUtils::DeleteBuffer(m_VerticesVbo);
+	GLUtils::DeleteVertexArray(m_Vao);
 
 }

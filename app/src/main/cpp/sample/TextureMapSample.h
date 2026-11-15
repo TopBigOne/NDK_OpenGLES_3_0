@@ -60,7 +60,7 @@ public:
 	 * @brief 初始化 OpenGL 资源
 	 * @details 创建纹理对象、编译着色器程序、获取 uniform 位置
 	 */
-	virtual void Init();
+	virtual bool Init();
 
 	/**
 	 * @brief 渲染函数

@@ -46,6 +46,7 @@
 VaoSample::VaoSample()
 {
 	m_VaoId = 0;  // 初始化 VAO ID
+	m_VboIds[0] = m_VboIds[1] = GL_NONE;
 
 }
 
@@ -71,7 +72,7 @@ void VaoSample::LoadImage(NativeImage *pImage)
  * @brief 初始化 OpenGL 资源
  * @details 创建 VAO、VBO、EBO，配置顶点属性，编译着色器
  */
-void VaoSample::Init()
+bool VaoSample::Init()
 {
 	// ==================== 顶点着色器 ====================
 	const char vShaderStr[] =
@@ -138,6 +139,11 @@ void VaoSample::Init()
 
 	// ==================== 编译着色器程序 ====================
 	m_ProgramObj = GLUtils::CreateProgram(vShaderStr, fShaderStr, m_VertexShader, m_FragmentShader);
+	if (m_ProgramObj == GL_NONE)
+	{
+		LOGCATE("VaoSample::Init create program fail");
+		return false;
+	}
 
 	// ==================== 生成并配置 VBO ====================
 	// 生成2个 VBO：一个存顶点数据，一个存索引数据
@@ -185,6 +191,7 @@ void VaoSample::Init()
 
 	// 解绑 VAO（保存当前配置）
 	glBindVertexArray(GL_NONE);
+	return true;
 }
 
 /**
@@ -221,12 +228,8 @@ void VaoSample::Draw(int screenW, int screenH)
  */
 void VaoSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);      // 删除着色器程序
-		glDeleteBuffers(2, m_VboIds);       // 删除2个VBO
-		glDeleteVertexArrays(1, &m_VaoId);  // 删除VAO
-		m_ProgramObj = GL_NONE;
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);      // 删除着色器程序
+	GLUtils::DeleteBuffers(2, m_VboIds);       // 删除2个VBO
+	GLUtils::DeleteVertexArray(m_VaoId);       // 删除VAO
 
 }

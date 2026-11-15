@@ -39,6 +39,7 @@ CoordSystemSample::CoordSystemSample()
 
 	m_TextureId = GL_NONE;      // 纹理 ID
 	m_VaoId = GL_NONE;          // VAO ID
+	m_VboIds[0] = m_VboIds[1] = m_VboIds[2] = GL_NONE;  // Init 失败时 Destroy 依赖它们为 0
 
 	m_AngleX = 0;               // 绕 X 轴旋转角度（度数）
 	m_AngleY = 0;               // 绕 Y 轴旋转角度（度数）
@@ -60,11 +61,8 @@ CoordSystemSample::~CoordSystemSample()
  * @brief 初始化 OpenGL 资源
  * @details 创建纹理、着色器程序、VAO/VBO，并上传数据
  */
-void CoordSystemSample::Init()
+bool CoordSystemSample::Init()
 {
-	// 避免重复初始化
-	if(m_ProgramObj)
-		return;
 
 	// ==================== 创建并配置纹理 ====================
 	glGenTextures(1, &m_TextureId);              // 生成纹理对象
@@ -117,6 +115,7 @@ void CoordSystemSample::Init()
 	else
 	{
 		LOGCATE("CoordSystemSample::Init create program fail");
+		return false;
 	}
 
 	// ==================== 定义顶点坐标（矩形的 4 个顶点）====================
@@ -179,6 +178,7 @@ void CoordSystemSample::Init()
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);   // 绑定纹理
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImage.width, m_RenderImage.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);       // 解绑纹理
+	return true;
 }
 
 /**
@@ -238,13 +238,10 @@ void CoordSystemSample::Draw(int screenW, int screenH)
  */
 void CoordSystemSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);          // 删除着色器程序
-		glDeleteBuffers(3, m_VboIds);           // 删除 3 个 VBO
-		glDeleteVertexArrays(1, &m_VaoId);      // 删除 VAO
-		glDeleteTextures(1, &m_TextureId);      // 删除纹理
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);          // 删除着色器程序
+	GLUtils::DeleteBuffers(3, m_VboIds);           // 删除 3 个 VBO
+	GLUtils::DeleteVertexArray(m_VaoId);           // 删除 VAO
+	GLUtils::DeleteTexture(m_TextureId);           // 删除纹理
 }
 
 /**

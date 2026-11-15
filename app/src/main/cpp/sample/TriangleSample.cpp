@@ -48,11 +48,9 @@ void TriangleSample::LoadImage(NativeImage *pImage)
  * @brief 初始化 OpenGL 资源
  * @details 创建并编译着色器程序，包括顶点着色器和片段着色器
  */
-void TriangleSample::Init()
+bool TriangleSample::Init()
 {
-	// 避免重复初始化
-	if(m_ProgramObj != 0)
-		return;
+	// 是否已初始化由 GLSampleBase 管理，这里不再自行判断
 
 	// ==================== 顶点着色器 ====================
 	// 顶点着色器负责处理每个顶点的位置变换
@@ -78,7 +76,12 @@ void TriangleSample::Init()
 	// 创建着色器程序：编译顶点着色器和片段着色器，并链接成一个完整的程序
 	// m_VertexShader 和 m_FragmentShader 会存储编译后的着色器 ID
 	m_ProgramObj = GLUtils::CreateProgram(vShaderStr, fShaderStr, m_VertexShader, m_FragmentShader);
-
+	if (m_ProgramObj == GL_NONE)
+	{
+		LOGCATE("TriangleSample::Init create program fail");
+		return false;
+	}
+	return true;
 }
 
 /**
@@ -140,10 +143,7 @@ void TriangleSample::Draw(int screenW, int screenH)
  */
 void TriangleSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);      // 删除着色器程序对象
-		m_ProgramObj = GL_NONE;             // 重置为 GL_NONE，避免野指针
-	}
+	// DeleteProgram 会把句柄清零，重复调用安全；上下文丢失时只清零不删除
+	GLUtils::DeleteProgram(m_ProgramObj);
 
 }

@@ -66,6 +66,10 @@ PBOSample::PBOSample()
 PBOSample::~PBOSample()
 {
 	NativeImageUtil::FreeNativeImage(&m_RenderImage);
+	// 读回的图像是 CPU 数据，放在析构里释放：Destroy 只负责 GL 资源，
+	// 上下文重建后不需要（也不应该）重新保存一遍文件
+	NativeImageUtil::FreeNativeImage(&m_DownloadImages[0]);
+	NativeImageUtil::FreeNativeImage(&m_DownloadImages[1]);
 }
 
 /**
@@ -88,10 +92,8 @@ void PBOSample::LoadImage(NativeImage *pImage)
  * @brief 初始化 OpenGL 资源
  * @details 创建着色器、VBO/VAO、纹理、PBO和FBO
  */
-void PBOSample::Init()
+bool PBOSample::Init()
 {
-    if(m_ProgramObj)
-        return;
 
 	// ==================== 定义顶点坐标数据 ====================
 	// 四个顶点构成矩形（两个三角形），覆盖整个屏幕 [-1, 1]
@@ -189,8 +191,8 @@ void PBOSample::Init()
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATD("PBOSample::Init m_ProgramObj == GL_NONE");
-		return;
+		LOGCATE("PBOSample::Init m_ProgramObj == GL_NONE");
+		return false;
 	}
 
 	// ==================== 获取 Uniform 变量位置 ====================
@@ -309,9 +311,10 @@ void PBOSample::Init()
 	if (!CreateFrameBufferObj())
 	{
 		LOGCATE("PBOSample::Init CreateFrameBufferObj fail");
-		return;
+		return false;
 	}
 
+	return true;
 }
 
 /**
@@ -387,50 +390,15 @@ void PBOSample::Draw(int screenW, int screenH)
  */
 void PBOSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		m_ProgramObj = GL_NONE;
-	}
-
-	if (m_FboProgramObj)
-	{
-		glDeleteProgram(m_FboProgramObj);
-		m_FboProgramObj = GL_NONE;
-	}
-
-	if (m_ImageTextureId)
-	{
-		glDeleteTextures(1, &m_ImageTextureId);
-	}
-
-	if (m_FboTextureId)
-	{
-		glDeleteTextures(1, &m_FboTextureId);
-	}
-
-	if (m_VboIds[0])
-	{
-		glDeleteBuffers(4, m_VboIds);
-	}
-
-	if (m_VaoIds[0])
-	{
-		glDeleteVertexArrays(2, m_VaoIds);
-	}
-
-	if (m_FboId)
-	{
-		glDeleteFramebuffers(1, &m_FboId);
-	}
-
-    if (m_DownloadPboIds[0]) {
-        glDeleteBuffers(2, m_DownloadPboIds);  // 删除下载 PBO
-    }
-
-    if (m_UploadPboIds[0]) {
-        glDeleteBuffers(2, m_UploadPboIds);    // 删除上传 PBO
-    }
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteProgram(m_FboProgramObj);
+	GLUtils::DeleteTexture(m_ImageTextureId);
+	GLUtils::DeleteTexture(m_FboTextureId);
+	GLUtils::DeleteBuffers(4, m_VboIds);
+	GLUtils::DeleteVertexArrays(2, m_VaoIds);
+	GLUtils::DeleteFramebuffer(m_FboId);
+	GLUtils::DeleteBuffers(2, m_DownloadPboIds);  // 删除下载 PBO
+	GLUtils::DeleteBuffers(2, m_UploadPboIds);    // 删除上传 PBO
 
     // 释放从下载 PBO 拷贝出来的图像数据
     NativeImageUtil::FreeNativeImage(&m_DownloadImages[0]);

@@ -21,8 +21,10 @@ void RenderI444Sample::LoadImage(NativeImage *pImage)
 	}
 }
 
-void RenderI444Sample::Init()
+bool RenderI444Sample::Init()
 {
+	// 原实现没有“已初始化”守卫，每帧都会新建 program 和纹理并重新上传整张 I444 大图（严重泄漏）；
+	// 现在由 GLSampleBase 保证每个上下文只 Init 一次。
 	char vShaderStr[] =R"(
 			#version 300 es
 			layout(location = 0) in vec4 a_position;
@@ -62,6 +64,11 @@ void RenderI444Sample::Init()
 
 	// Load the shaders and get a linked program object
 	m_ProgramObj = GLUtils::CreateProgram(vShaderStr, fShaderStr, m_VertexShader, m_FragmentShader);
+	if (m_ProgramObj == GL_NONE)
+	{
+		LOGCATE("RenderI444Sample::Init create program fail");
+		return false;
+	}
 
 	// Get the sampler location
 	m_TextureLoc = glGetUniformLocation (m_ProgramObj, "y_texture" );
@@ -82,6 +89,7 @@ void RenderI444Sample::Init()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
+	return true;
 }
 
 void RenderI444Sample::Draw(int screenW, int screenH)
@@ -133,10 +141,7 @@ void RenderI444Sample::Draw(int screenW, int screenH)
 
 void RenderI444Sample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteTextures(1, &m_TextureId);
-		m_ProgramObj = GL_NONE;
-	}
+	// 各对象独立释放并清零，重复调用安全
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteTexture(m_TextureId);
 }

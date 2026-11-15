@@ -69,7 +69,7 @@ public:
 	 * @brief 初始化 OpenGL 资源
 	 * @details 创建纹理、编译着色器、设置 VAO/VBO
 	 */
-	virtual void Init();
+	virtual bool Init();
 
 	/**
 	 * @brief 渲染函数

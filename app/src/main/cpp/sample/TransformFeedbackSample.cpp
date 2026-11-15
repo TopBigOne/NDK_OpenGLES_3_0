@@ -38,7 +38,7 @@ void TransformFeedbackSample::LoadImage(NativeImage *pImage)
 	}
 }
 
-void TransformFeedbackSample::Init()
+bool TransformFeedbackSample::Init()
 {
 	//顶点坐标
 	GLfloat vVertices[] = {
@@ -95,8 +95,8 @@ void TransformFeedbackSample::Init()
 
 	if (m_ProgramObj == GL_NONE )
 	{
-		LOGCATD("TransformFeedbackSample::Init m_ProgramObj == GL_NONE");
-		return;
+		LOGCATE("TransformFeedbackSample::Init create program fail");
+		return false;
 	}
 	m_SamplerLoc = glGetUniformLocation(m_ProgramObj, "s_TextureMap");
 
@@ -150,7 +150,7 @@ void TransformFeedbackSample::Init()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImage.width, m_RenderImage.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
 	GO_CHECK_GL_ERROR();
-
+	return true;
 }
 
 void TransformFeedbackSample::Draw(int screenW, int screenH)
@@ -191,34 +191,11 @@ void TransformFeedbackSample::Draw(int screenW, int screenH)
 
 void TransformFeedbackSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-	}
-
-	if (m_ImageTextureId)
-	{
-		glDeleteTextures(1, &m_ImageTextureId);
-	}
-
-	if (m_VboIds[0])
-	{
-		glDeleteBuffers(2, m_VboIds);
-	}
-
-	if (m_VaoId)
-	{
-		glDeleteVertexArrays(1, &m_VaoId);
-	}
-
-	if (m_TransFeedbackBufId)
-	{
-		glDeleteBuffers(1, &m_TransFeedbackBufId);
-	}
-
-	if (m_TransFeedbackObjId)
-	{
-		glDeleteTransformFeedbacks(1, &m_TransFeedbackObjId);
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteTexture(m_ImageTextureId);
+	GLUtils::DeleteBuffers(2, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteBuffer(m_TransFeedbackBufId);
+	GLUtils::DeleteTransformFeedbacks(1, &m_TransFeedbackObjId);
 }
 

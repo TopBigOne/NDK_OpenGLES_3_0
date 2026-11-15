@@ -20,7 +20,7 @@ public:
 	InstancingSample();
 	virtual ~InstancingSample();
 
-	virtual void Init();
+	virtual bool Init();
 
 	virtual void Draw(int screenW, int screenH);
 

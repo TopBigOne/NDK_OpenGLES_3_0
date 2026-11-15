@@ -76,6 +76,7 @@
 //#include "HardwareBufferExample.h"
 
 MyGLRenderContext* MyGLRenderContext::m_pContext = nullptr;
+std::mutex MyGLRenderContext::s_InstanceMutex;
 
 MyGLRenderContext::MyGLRenderContext()
 {
@@ -87,14 +88,19 @@ MyGLRenderContext::MyGLRenderContext()
 MyGLRenderContext::~MyGLRenderContext()
 {
 	std::lock_guard<std::mutex> lock(m_Mutex);
+	// 析构发生在 UI 线程（native_UnInit），这里没有 GL 上下文；GL 对象会随 GLSurfaceView 的
+	// EGLContext 一起销毁。用 OnGLContextLost() 只丢弃句柄，同时让示例在 Destroy() 里
+	// 完成非 GL 的清理（例如停止共享上下文的渲染线程）。
 	if (m_pCurSample)
 	{
+		m_pCurSample->OnGLContextLost();
 		delete m_pCurSample;
 		m_pCurSample = nullptr;
 	}
 
 	for (GLSampleBase *pSample : m_PendingDestroySamples)
 	{
+		pSample->OnGLContextLost();
 		delete pSample;
 	}
 	m_PendingDestroySamples.clear();
@@ -419,6 +425,20 @@ void MyGLRenderContext::OnSurfaceCreated()
 {
 	LOGCATD("MyGLRenderContext::OnSurfaceCreated");
 	glClearColor(1.0f,1.0f,1.0f, 1.0f);
+
+	// GLSurfaceView 只有在创建了新的 EGLContext 时才会回调 onSurfaceCreated：
+	// 首次显示、切后台后上下文没有被保留、示例切换时视图被重建、或驱动报告 EGL_CONTEXT_LOST。
+	// 此时所有示例持有的 program/texture/VAO 等句柄都属于旧上下文，已经失效，
+	// 新上下文中同名的对象可能是别人的，所以不能 glDelete*，只能丢弃，下一帧再重新 Init。
+	std::lock_guard<std::mutex> lock(m_Mutex);
+	if (m_pCurSample)
+	{
+		m_pCurSample->OnGLContextLost();
+	}
+	for (GLSampleBase *pSample : m_PendingDestroySamples)
+	{
+		pSample->OnGLContextLost();
+	}
 }
 
 void MyGLRenderContext::OnSurfaceChanged(int width, int height)
@@ -439,21 +459,23 @@ void MyGLRenderContext::OnDrawFrame()
 	// 在 GL 线程里释放被切换掉的示例，它们的 GL 资源只能在这里删除
 	for (GLSampleBase *pSample : m_PendingDestroySamples)
 	{
-		pSample->Destroy();
+		pSample->ReleaseGLResources();
 		delete pSample;
 	}
 	m_PendingDestroySamples.clear();
 
 	if (m_pCurSample)
 	{
-		m_pCurSample->Init();
-		m_pCurSample->Draw(m_ScreenW, m_ScreenH);
+		// 初始化时机、Init 失败处理统一由基类管理，见 GLSampleBase::RenderFrame
+		m_pCurSample->RenderFrame(m_ScreenW, m_ScreenH);
 	}
 }
 
 MyGLRenderContext *MyGLRenderContext::GetInstance()
 {
 	LOGCATV("MyGLRenderContext::GetInstance");
+	// GL 线程（onDrawFrame）和 UI 线程（native_Init/SetXXX/UnInit）都会调用，创建/销毁必须串行
+	std::lock_guard<std::mutex> lock(s_InstanceMutex);
 	if (m_pContext == nullptr)
 	{
 		m_pContext = new MyGLRenderContext();
@@ -464,6 +486,7 @@ MyGLRenderContext *MyGLRenderContext::GetInstance()
 void MyGLRenderContext::DestroyInstance()
 {
 	LOGCATD("MyGLRenderContext::DestroyInstance");
+	std::lock_guard<std::mutex> lock(s_InstanceMutex);
 	if (m_pContext)
 	{
 		delete m_pContext;

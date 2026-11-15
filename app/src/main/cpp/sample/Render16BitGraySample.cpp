@@ -24,7 +24,7 @@ void Render16BitGraySample::LoadImage(NativeImage *pImage)
 	//YUVP010Example::YUVP010Test();
 }
 
-void Render16BitGraySample::Init()
+bool Render16BitGraySample::Init()
 {
 	char vShaderStr[] =R"(
 			#version 300 es
@@ -51,6 +51,11 @@ void Render16BitGraySample::Init()
 
 	// Load the shaders and get a linked program object
 	m_ProgramObj= GLUtils::CreateProgram(vShaderStr, fShaderStr, m_VertexShader, m_FragmentShader);
+	if (m_ProgramObj == GL_NONE)
+	{
+		LOGCATE("Render16BitGraySample::Init create program fail");
+		return false;
+	}
 
 	// Get the sampler location
 	m_ySamplerLoc = glGetUniformLocation (m_ProgramObj, "y_texture" );
@@ -75,6 +80,7 @@ void Render16BitGraySample::Init()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
+	return true;
 }
 
 void Render16BitGraySample::Draw(int screenW, int screenH)
@@ -124,10 +130,6 @@ void Render16BitGraySample::Draw(int screenW, int screenH)
 
 void Render16BitGraySample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteTextures(1, &m_yTextureId);
-		m_ProgramObj = GL_NONE;
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteTexture(m_yTextureId);
 }

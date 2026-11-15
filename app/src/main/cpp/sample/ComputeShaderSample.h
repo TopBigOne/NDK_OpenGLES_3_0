@@ -18,6 +18,9 @@ class ComputeShaderSample: public GLSampleBase
 public:
 	ComputeShaderSample()
 	{
+		// Init 失败时基类会调用 Destroy，句柄必须有确定的初值
+		m_DataBuffer = GL_NONE;
+		m_DataSize = 0;
 	}
 
 	virtual ~ComputeShaderSample()
@@ -27,7 +30,7 @@ public:
 
 	virtual void LoadImage(NativeImage *pImage);
 
-	virtual void Init();
+	virtual bool Init();
 
 	virtual void Draw(int screenW, int screenH);
 

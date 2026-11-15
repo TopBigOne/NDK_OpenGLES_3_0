@@ -18,6 +18,8 @@ CloudSample::CloudSample()
 
 	m_TextureId = GL_NONE;
 	m_VaoId = GL_NONE;
+	// Init 失败时基类会调用 Destroy，句柄必须有确定的初值，否则会删除随机名字
+	m_VboIds[0] = m_VboIds[1] = m_VboIds[2] = GL_NONE;
 
 	m_AngleX = 0;
 	m_AngleY = 0;
@@ -32,10 +34,8 @@ CloudSample::~CloudSample()
 
 }
 
-void CloudSample::Init()
+bool CloudSample::Init()
 {
-	if(m_ProgramObj)
-		return;
 	//create RGBA texture
 	glGenTextures(1, &m_TextureId);
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
@@ -184,6 +184,7 @@ void CloudSample::Init()
 	else
 	{
 		LOGCATE("CloudSample::Init create program fail");
+		return false;
 	}
 
 	GLfloat verticesCoords[] = {
@@ -231,6 +232,7 @@ void CloudSample::Init()
 
 	glBindVertexArray(GL_NONE);
 
+	return true;
 }
 
 void CloudSample::LoadImage(NativeImage *pImage)
@@ -284,13 +286,10 @@ void CloudSample::Draw(int screenW, int screenH)
 
 void CloudSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(3, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(1, &m_TextureId);
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteBuffers(3, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteTexture(m_TextureId);
 }
 
 void CloudSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)

@@ -87,7 +87,7 @@ public:
 	 * @brief 初始化 OpenGL 资源
 	 * @details 创建 FBO、纹理、VAO/VBO、上传 PBO 和下载 PBO
 	 */
-	virtual void Init();
+	virtual bool Init();
 
 	/**
 	 * @brief 渲染函数

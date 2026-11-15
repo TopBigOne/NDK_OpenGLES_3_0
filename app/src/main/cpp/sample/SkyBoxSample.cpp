@@ -35,6 +35,10 @@ m_CubeProgramObj(GL_NONE)  // 立方体着色器程序
 
 	m_TextureId = GL_NONE;       // 立方体贴图纹理 ID
 	m_SkyBoxVaoId = GL_NONE;     // 天空盒 VAO
+	// 以下句柄原来未初始化；Init 失败时基类会调用 Destroy，必须保证未创建的句柄为 0
+	m_SkyBoxVboId = GL_NONE;
+	m_CubeVaoId = GL_NONE;
+	m_CubeVboId = GL_NONE;
 
 	m_AngleX = 0;  // X 轴旋转角度
 	m_AngleY = 0;  // Y 轴旋转角度
@@ -68,12 +72,8 @@ SkyBoxSample::~SkyBoxSample()
  * 初始化函数
  * 创建天空盒和立方体的着色器程序、VBO、VAO
  */
-void SkyBoxSample::Init()
+bool SkyBoxSample::Init()
 {
-	if (m_ProgramObj)
-	{
-		return;
-	}
 
 	// ========== 天空盒顶点着色器 ==========
 	// 将顶点坐标直接作为纹理坐标（3D 方向向量）
@@ -152,7 +152,7 @@ void SkyBoxSample::Init()
 	else
 	{
 		LOGCATE("SkyBoxSample::Init create program fail");
-		return;
+		return false;
 	}
 
 	// 创建立方体着色器程序
@@ -167,7 +167,7 @@ void SkyBoxSample::Init()
 	else
 	{
 		LOGCATE("SkyBoxSample::Init create program fail");
-		return;
+		return false;
 	}
 
 	// ========== 立方体顶点数据 ==========
@@ -293,7 +293,7 @@ void SkyBoxSample::Init()
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
 	glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
 	glBindVertexArray(GL_NONE);
-
+	return true;
 }
 
 /**
@@ -406,22 +406,15 @@ void SkyBoxSample::Draw(int screenW, int screenH)
  */
 void SkyBoxSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteVertexArrays(1, &m_SkyBoxVaoId);
-		glDeleteBuffers(1, &m_SkyBoxVboId);
-		glDeleteTextures(1, &m_TextureId);
-		m_ProgramObj = GL_NONE;
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteVertexArray(m_SkyBoxVaoId);
+	GLUtils::DeleteBuffer(m_SkyBoxVboId);
+	// 立方体贴图在 Draw 中懒创建，清零后下一次 Draw 会用 CPU 侧保留的 6 张图重新上传
+	GLUtils::DeleteTexture(m_TextureId);
 
-	if (m_CubeProgramObj)
-	{
-		glDeleteProgram(m_CubeProgramObj);
-		glDeleteVertexArrays(1, &m_CubeVaoId);
-		glDeleteBuffers(1, &m_CubeVboId);
-		m_CubeProgramObj = GL_NONE;
-	}
+	GLUtils::DeleteProgram(m_CubeProgramObj);
+	GLUtils::DeleteVertexArray(m_CubeVaoId);
+	GLUtils::DeleteBuffer(m_CubeVboId);
 }
 
 

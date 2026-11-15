@@ -40,8 +40,9 @@
  */
 FBOSample::FBOSample()
 {
-	m_VaoIds[0] = GL_NONE;        // VAO ID（用于普通渲染和离屏渲染）
-	m_VboIds[0] = GL_NONE;        // VBO ID 数组
+	// Init 失败后基类会调用 Destroy，Destroy 会读取所有句柄，因此数组每个元素都要清零
+	m_VaoIds[0] = m_VaoIds[1] = GL_NONE;        // VAO ID（用于普通渲染和离屏渲染）
+	m_VboIds[0] = m_VboIds[1] = m_VboIds[2] = m_VboIds[3] = GL_NONE;        // VBO ID 数组
 
 	m_ImageTextureId = GL_NONE;   // 原始图像纹理 ID
 	m_FboTextureId = GL_NONE;     // FBO 颜色附件纹理 ID
@@ -82,8 +83,10 @@ void FBOSample::LoadImage(NativeImage *pImage)
  * @brief 初始化 OpenGL 资源
  * @details 创建两套着色器程序、VAO/VBO、纹理和 FBO
  */
-void FBOSample::Init()
+bool FBOSample::Init()
 {
+	// 原实现没有“已初始化”守卫，每帧都会重建 program/VBO/VAO/纹理/FBO 并泄漏；
+	// 现在由 GLSampleBase 保证每个上下文只 Init 一次。
 	// ==================== 定义顶点坐标（全屏矩形）====================
 	GLfloat vVertices[] = {
 			-1.0f, -1.0f, 0.0f,  // 左下
@@ -165,8 +168,8 @@ void FBOSample::Init()
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATD("FBOSample::Init m_ProgramObj == GL_NONE");
-		return;
+		LOGCATE("FBOSample::Init m_ProgramObj == GL_NONE");
+		return false;
 	}
 
 	// 获取 uniform 变量位置
@@ -255,8 +258,9 @@ void FBOSample::Init()
 	if (!CreateFrameBufferObj())
 	{
 		LOGCATE("FBOSample::Init CreateFrameBufferObj fail");
-		return;
+		return false;
 	}
+	return true;
 }
 
 /**
@@ -344,47 +348,14 @@ void FBOSample::Draw(int screenW, int screenH)
  */
 void FBOSample::Destroy()
 {
-	// 删除普通渲染着色器程序
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-	}
-
-	// 删除离屏渲染着色器程序
-	if (m_FboProgramObj)
-	{
-		glDeleteProgram(m_FboProgramObj);
-	}
-
-	// 删除原始图像纹理
-	if (m_ImageTextureId)
-	{
-		glDeleteTextures(1, &m_ImageTextureId);
-	}
-
-	// 删除 FBO 颜色附件纹理
-	if (m_FboTextureId)
-	{
-		glDeleteTextures(1, &m_FboTextureId);
-	}
-
-	// 删除 VBO
-	if (m_VboIds[0])
-	{
-		glDeleteBuffers(4, m_VboIds);
-	}
-
-	// 删除 VAO
-	if (m_VaoIds[0])
-	{
-		glDeleteVertexArrays(2, m_VaoIds);
-	}
-
-	// 删除 FBO
-	if (m_FboId)
-	{
-		glDeleteFramebuffers(1, &m_FboId);
-	}
+	// 各对象独立释放并清零（原实现删除后不清零，再次 Destroy 会重复删除）
+	GLUtils::DeleteProgram(m_ProgramObj);          // 普通渲染着色器程序
+	GLUtils::DeleteProgram(m_FboProgramObj);       // 离屏渲染着色器程序
+	GLUtils::DeleteTexture(m_ImageTextureId);      // 原始图像纹理
+	GLUtils::DeleteTexture(m_FboTextureId);        // FBO 颜色附件纹理
+	GLUtils::DeleteBuffers(4, m_VboIds);           // VBO
+	GLUtils::DeleteVertexArrays(2, m_VaoIds);      // VAO
+	GLUtils::DeleteFramebuffer(m_FboId);           // FBO
 }
 
 /**

@@ -27,6 +27,8 @@
 #include <GLES3/gl3.h>
 #include <ImageDef.h>
 #include <ByteFlowLock.h>
+#include <LogUtil.h>
+#include <GLUtils.h>
 
 // ==================== 数学常量定义 ====================
 #define MATH_PI 3.1415926535897932384626433832802  // 圆周率 π
@@ -120,9 +122,23 @@
  * @brief OpenGL ES 示例基类
  *
  * @details
- * 所有 OpenGL ES 示例都继承自此类，提供统一的接口规范：
- * - 必须实现：Init(), Draw(), Destroy()
- * - 可选实现：LoadImage(), UpdateTransformMatrix(), SetTouchLocation() 等
+ * 生命周期约定（由基类统一管理，子类不要再自己写 `if (m_ProgramObj) return;` 之类的守卫）：
+ *
+ * 1. 线程：Init()/Draw()/Destroy() 只会在 GL 线程、且对应的 EGLContext 为当前上下文时被调用；
+ *    LoadImage()/SetTouchLocation() 等输入接口在 UI 线程调用，由 MyGLRenderContext 的锁与
+ *    GL 线程互斥，因此输入接口里只能处理 CPU 数据，不能调用任何 GL 函数。
+ * 2. Init()：创建全部 GL 资源，成功返回 true。返回 false 时基类会立即调用 Destroy() 清理已经
+ *    创建了一半的资源，并且在下一次上下文重建之前不再重试（着色器编译失败这类错误是确定性的，
+ *    每帧重试只会刷日志）。Init() 可以依赖 LoadImage() 已经拷贝好的 CPU 侧图像数据。
+ * 3. Draw()：只有 Init() 成功后才会被调用，子类不需要再判断 program 是否为 0。
+ * 4. Destroy()：只释放 GL 资源，必须可重入。删除 GL 对象一律使用 GLUtils::DeleteXXX，
+ *    它们会把句柄清零，并且在“上下文已丢失”模式下只清零不调用 glDelete*。
+ *    CPU 侧数据（NativeImage 等）在析构函数里释放，因为上下文重建后 Init() 还要用它们重新上传。
+ *    Destroy() 之后示例必须能够再次 Init()。
+ * 5. 上下文丢失：GLSurfaceView 重建 EGLContext（切后台后上下文没有保留、示例切换时视图被重建、
+ *    驱动报告 EGL_CONTEXT_LOST）时，旧句柄全部失效，而且新上下文里可能已经有同名的新对象。
+ *    此时框架调用 OnGLContextLost()：在“丢弃模式”下执行 Destroy()，句柄被清零但不会对新上下文
+ *    里的同名对象调用 glDelete*；下一帧自动重新 Init()。
  */
 class GLSampleBase
 {
@@ -139,16 +155,78 @@ public:
 
 		m_SurfaceWidth = 0;      // 渲染表面宽度
 		m_SurfaceHeight = 0;     // 渲染表面高度
+
+		m_GLState = GL_STATE_UNINITIALIZED;
 	}
 
 	/**
 	 * @brief 虚析构函数
-	 * @details 确保派生类的析构函数被正确调用
+	 * @details 析构函数里只能释放 CPU 资源：析构可能发生在没有 GL 上下文的线程（例如 UI 线程）。
 	 */
 	virtual ~GLSampleBase()
 	{
 
 	}
+
+	// ==================== 框架调用的生命周期入口（GL 线程） ====================
+
+	/**
+	 * @brief 渲染一帧：按需初始化，初始化成功后才绘制
+	 */
+	void RenderFrame(int screenW, int screenH)
+	{
+		if (m_GLState == GL_STATE_UNINITIALIZED)
+		{
+			if (Init())
+			{
+				m_GLState = GL_STATE_READY;
+			}
+			else
+			{
+				LOGCATE("GLSampleBase::RenderFrame Init failed, sample=%p", this);
+				// 清理 Init 过程中已经创建的部分资源，避免泄漏
+				Destroy();
+				m_GLState = GL_STATE_FAILED;
+			}
+		}
+
+		if (m_GLState == GL_STATE_READY)
+		{
+			Draw(screenW, screenH);
+		}
+	}
+
+	/**
+	 * @brief 在资源所属的上下文中正常释放 GL 资源（示例被切换掉时调用）
+	 */
+	void ReleaseGLResources()
+	{
+		if (m_GLState != GL_STATE_UNINITIALIZED)
+		{
+			Destroy();
+		}
+		m_GLState = GL_STATE_UNINITIALIZED;
+	}
+
+	/**
+	 * @brief 资源所属的上下文已经失效：丢弃句柄但不调用 glDelete*，下一帧重新 Init
+	 */
+	void OnGLContextLost()
+	{
+		if (m_GLState != GL_STATE_UNINITIALIZED)
+		{
+			GLUtils::ScopedAbandonGLObjects abandon;
+			Destroy();
+		}
+		m_GLState = GL_STATE_UNINITIALIZED;
+	}
+
+	bool IsGLReady() const
+	{
+		return m_GLState == GL_STATE_READY;
+	}
+
+	// ==================== 输入接口（UI 线程，只处理 CPU 数据） ====================
 
 	/**
 	 * @brief 加载图像数据（单张图像）
@@ -205,33 +283,41 @@ public:
 	virtual void SetGravityXY(float x, float y)
 	{}
 
+protected:
 	/**
 	 * @brief 初始化 OpenGL 资源（纯虚函数，必须实现）
-	 * @details 在此函数中创建着色器程序、纹理、缓冲区等 OpenGL 对象
+	 * @return 全部资源创建成功返回 true；失败返回 false，基类负责调用 Destroy() 清理
 	 */
-	virtual void Init() = 0;
+	virtual bool Init() = 0;
 
 	/**
-	 * @brief 渲染函数（纯虚函数，必须实现）
+	 * @brief 渲染函数（纯虚函数，必须实现），仅在 Init() 成功后调用
 	 * @param screenW 屏幕/视口宽度（像素）
 	 * @param screenH 屏幕/视口高度（像素）
-	 * @details 每帧调用一次，执行实际的渲染操作
 	 */
 	virtual void Draw(int screenW, int screenH) = 0;
 
 	/**
-	 * @brief 销毁 OpenGL 资源（纯虚函数，必须实现）
-	 * @details 删除着色器程序、纹理、缓冲区等，防止内存泄漏
+	 * @brief 释放 OpenGL 资源（纯虚函数，必须实现）
+	 * @details 必须可重入、必须用 GLUtils::DeleteXXX 删除并清零句柄，只释放 GL 资源
 	 */
 	virtual void Destroy() = 0;
 
-protected:
 	GLuint m_VertexShader;      // 顶点着色器对象 ID
 	GLuint m_FragmentShader;    // 片段着色器对象 ID
 	GLuint m_ProgramObj;        // 着色器程序对象 ID
 	MySyncLock m_Lock;          // 线程同步锁（用于多线程渲染）
 	int m_SurfaceWidth;         // 渲染表面宽度
 	int m_SurfaceHeight;        // 渲染表面高度
+
+private:
+	enum GLState
+	{
+		GL_STATE_UNINITIALIZED,   // 尚未初始化，或资源已释放/已丢弃，下一帧会 Init
+		GL_STATE_READY,           // Init 成功，可以 Draw
+		GL_STATE_FAILED,          // Init 失败，资源已清理，等待上下文重建后再试
+	};
+	GLState m_GLState;
 };
 
 

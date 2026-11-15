@@ -33,12 +33,18 @@ public:
 
 	virtual void LoadImage(NativeImage *pImage);
 
-	virtual void Init();
+	virtual bool Init();
 	virtual void Draw(int screenW, int screenH);
 
 	virtual void Destroy();
 
 	bool CreateFrameBufferObj();
+
+private:
+	// 原来的 Init() 兼做“首次创建资源”和“每帧更新拉伸动画”（旧框架每帧都调用 Init）。
+	// 新生命周期只调用一次 Init，因此把原逻辑保留在这里：资源未创建时完整初始化，
+	// 已创建时只推进动画、更新顶点缓冲并按新尺寸重建 FBO 纹理；Draw 每帧调用它。
+	bool InitOrUpdateGeometry();
 
 private:
 	GLuint m_ImageTextureId;
@@ -66,6 +72,10 @@ private:
 	int   m_StretchMode;
 
 	bool  m_bIsVerticalMode;
+
+	// Init 刚完成完整初始化（已经推进过一次动画）时，跳过紧接着那一帧 Draw 中的更新，
+	// 保证每帧只推进一次动画，与旧框架的行为一致
+	bool  m_bSkipNextUpdate;
 };
 
 

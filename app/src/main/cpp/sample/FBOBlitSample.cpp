@@ -55,11 +55,8 @@ FBOBlitSample::~FBOBlitSample()
 }
 
 // 初始化OpenGL资源
-void FBOBlitSample::Init()
+bool FBOBlitSample::Init()
 {
-	// 防止重复初始化
-	if(m_ProgramObj)
-		return;
 
 	// 创建RGBA纹理对象，用于存储输入图像
 	glGenTextures(1, &m_TextureId);
@@ -116,6 +113,7 @@ void FBOBlitSample::Init()
 	else
 	{
 		LOGCATE("FBOBlitSample::Init create program fail");
+		return false;
 	}
 
 	// 定义矩形的顶点坐标（NDC坐标系，范围-1到1）
@@ -179,9 +177,15 @@ void FBOBlitSample::Init()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImage.width, m_RenderImage.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
 
-	// 初始化帧缓冲对象（FBO），用于离屏渲染
-	LOGCATD("FBOBlitSample::Init InitFBO = %d", InitFBO());
+	// 初始化帧缓冲对象（FBO），用于离屏渲染。
+	// 注意不能把 InitFBO() 写在日志宏参数里：LOGCATD 在 Release 下不会求值参数，FBO 就不会被创建。
+	if (!InitFBO())
+	{
+		LOGCATE("FBOBlitSample::Init InitFBO fail");
+		return false;
+	}
 
+	return true;
 }
 
 // 加载图像数据
@@ -245,14 +249,13 @@ void FBOBlitSample::Draw(int screenW, int screenH)
 
 void FBOBlitSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-        glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(3, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(1, &m_TextureId);
-	}
+	// 原实现重复删除 program，且漏删了 InitFBO 创建的 FBO 和 4 个颜色附件纹理
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteBuffers(3, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteTexture(m_TextureId);
+	GLUtils::DeleteFramebuffer(m_FBO);
+	GLUtils::DeleteTextures(ATTACHMENT_NUM, m_AttachTexIds);
 }
 
 /**

@@ -39,10 +39,8 @@ ConveyorBeltExample::~ConveyorBeltExample()
     }
 }
 
-void ConveyorBeltExample::Init()
+bool ConveyorBeltExample::Init()
 {
-	if(m_ProgramObj)
-		return;
 
     for (int i = 0; i < BF_TEXTURE_NUM; ++i) {
         glGenTextures(1, &m_TextureIds[i]);
@@ -88,6 +86,7 @@ void ConveyorBeltExample::Init()
 	else
 	{
 		LOGCATE("ConveyorBeltExample::Init create program fail");
+		return false;
 	}
     vec2 pTmpCoords[BF_TEXTURE_NUM* 2 * 3];
 	//第一块矩形
@@ -184,6 +183,7 @@ void ConveyorBeltExample::Init()
         glBindTexture(GL_TEXTURE_2D, GL_NONE);
     }
 
+	return true;
 }
 
 void ConveyorBeltExample::LoadImage(NativeImage *pImage)
@@ -247,12 +247,15 @@ void ConveyorBeltExample::Draw(int screenW, int screenH)
 
 void ConveyorBeltExample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(2, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(BF_TEXTURE_NUM, m_TextureIds);
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteBuffers(2, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteTextures(BF_TEXTURE_NUM, m_TextureIds);
+
+	// m_TexImages 是 Init 从 m_RenderImage 切分出来的派生数据，每次 Init 都会重新 Alloc，
+	// 这里一并释放，否则上下文重建后再次 Init 会覆盖指针造成泄漏
+	for (int i = 0; i < BF_TEXTURE_NUM; ++i) {
+		NativeImageUtil::FreeNativeImage(&m_TexImages[i]);
 	}
 }
 

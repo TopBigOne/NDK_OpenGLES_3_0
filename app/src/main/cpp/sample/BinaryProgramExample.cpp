@@ -15,8 +15,9 @@
 
 BinaryProgramExample::BinaryProgramExample()
 {
-	m_VaoIds[0] = GL_NONE;
-	m_VboIds[0] = GL_NONE;
+	// Init 失败后基类会调用 Destroy，Destroy 会读取所有句柄，因此数组每个元素都要清零
+	m_VaoIds[0] = m_VaoIds[1] = GL_NONE;
+	m_VboIds[0] = m_VboIds[1] = m_VboIds[2] = m_VboIds[3] = GL_NONE;
 
 	m_ImageTextureId = GL_NONE;
 	m_FboTextureId = GL_NONE;
@@ -45,8 +46,10 @@ void BinaryProgramExample::LoadImage(NativeImage *pImage)
 	}
 }
 
-void BinaryProgramExample::Init()
+bool BinaryProgramExample::Init()
 {
+	// 原实现没有“已初始化”守卫，每帧都会重建全部资源并重新写一次二进制缓存文件；
+	// 现在由 GLSampleBase 保证每个上下文只 Init 一次。
 	//顶点坐标
 	GLfloat vVertices[] = {
 			-1.0f, -1.0f, 0.0f,
@@ -143,8 +146,7 @@ void BinaryProgramExample::Init()
             fclose(fp);
 
             //删除 program 重新加载
-            glDeleteProgram(m_ProgramObj);
-            m_ProgramObj = GL_NONE;
+            GLUtils::DeleteProgram(m_ProgramObj);
         }
 
         LoadBinary2Program(&m_ProgramObj, binaryFilePath);
@@ -152,8 +154,8 @@ void BinaryProgramExample::Init()
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATD("BinaryProgramExample::Init m_ProgramObj == GL_NONE");
-		return;
+		LOGCATE("BinaryProgramExample::Init m_ProgramObj == GL_NONE");
+		return false;
 	}
 	m_SamplerLoc = glGetUniformLocation(m_ProgramObj, "s_TextureMap");
 	m_FboSamplerLoc = glGetUniformLocation(m_FboProgramObj, "s_TextureMap");
@@ -229,9 +231,9 @@ void BinaryProgramExample::Init()
 	if (!CreateFrameBufferObj())
 	{
 		LOGCATE("BinaryProgramExample::Init CreateFrameBufferObj fail");
-		return;
+		return false;
 	}
-
+	return true;
 }
 
 void BinaryProgramExample::LoadBinary2Program(GLuint *pProgram, char *binFilePath) {
@@ -259,8 +261,7 @@ void BinaryProgramExample::LoadBinary2Program(GLuint *pProgram, char *binFilePat
 		if(GL_FALSE == status) {
 			//加载失败
 			LOGCATE("BinaryProgramExample glProgramBinary fail.");
-			glDeleteProgram(*pProgram);
-			*pProgram = GL_NONE;
+			GLUtils::DeleteProgram(*pProgram);
 		}
 
 		delete[] buffer;
@@ -320,41 +321,14 @@ void BinaryProgramExample::Draw(int screenW, int screenH)
 
 void BinaryProgramExample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-	}
-
-	if (m_FboProgramObj)
-	{
-		glDeleteProgram(m_FboProgramObj);
-	}
-
-	if (m_ImageTextureId)
-	{
-		glDeleteTextures(1, &m_ImageTextureId);
-	}
-
-	if (m_FboTextureId)
-	{
-		glDeleteTextures(1, &m_FboTextureId);
-	}
-
-	if (m_VboIds[0])
-	{
-		glDeleteBuffers(4, m_VboIds);
-	}
-
-	if (m_VaoIds[0])
-	{
-		glDeleteVertexArrays(2, m_VaoIds);
-	}
-
-	if (m_FboId)
-	{
-		glDeleteFramebuffers(1, &m_FboId);
-	}
-
+	// 各对象独立释放并清零（原实现删除后不清零，再次 Destroy 会重复删除）
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteProgram(m_FboProgramObj);
+	GLUtils::DeleteTexture(m_ImageTextureId);
+	GLUtils::DeleteTexture(m_FboTextureId);
+	GLUtils::DeleteBuffers(4, m_VboIds);
+	GLUtils::DeleteVertexArrays(2, m_VaoIds);
+	GLUtils::DeleteFramebuffer(m_FboId);
 }
 
 bool BinaryProgramExample::CreateFrameBufferObj()

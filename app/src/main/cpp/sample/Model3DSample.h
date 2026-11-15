@@ -78,7 +78,7 @@ public:
 	 * @brief 初始化 OpenGL 资源
 	 * @details 加载 3D 模型文件，创建并编译着色器程序
 	 */
-	virtual void Init();
+	virtual bool Init();
 
 	/**
 	 * @brief 渲染函数

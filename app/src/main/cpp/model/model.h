@@ -68,10 +68,20 @@ public:
         return hasTexture;
     }
 
+    // 模型是否加载成功（文件不存在、解析失败时 meshes 为空）
+    bool IsLoaded() const
+    {
+        return !meshes.empty();
+    }
+
     void Destroy()
     {
         for (Mesh &mesh : meshes) {
             mesh.Destroy();
+        }
+        // 纹理在多个网格间共享，只在这里按“已加载列表”各删除一次
+        for (Texture &texture : textures_loaded) {
+            GLUtils::DeleteTexture(texture.id);
         }
     }
 

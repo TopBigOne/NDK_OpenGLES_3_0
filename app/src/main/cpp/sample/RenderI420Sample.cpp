@@ -43,7 +43,7 @@ void RenderI420Sample::LoadImage(NativeImage *pImage)
  * 初始化 I420 渲染器
  * 创建着色器程序和纹理对象
  */
-void RenderI420Sample::Init()
+bool RenderI420Sample::Init()
 {
 	// 顶点着色器: 传递顶点位置和纹理坐标
 	char vShaderStr[] =R"(
@@ -126,6 +126,11 @@ void RenderI420Sample::Init()
 
 	// 编译链接着色器程序
 	m_ProgramObj = GLUtils::CreateProgram(vShaderStr, fShaderStr, m_VertexShader, m_FragmentShader);
+	if (m_ProgramObj == GL_NONE)
+	{
+		LOGCATE("RenderI420Sample::Init create program fail");
+		return false;
+	}
 
 	// 获取纹理采样器的 uniform 位置
 	m_TextureLoc = glGetUniformLocation (m_ProgramObj, "y_texture" );
@@ -152,6 +157,7 @@ void RenderI420Sample::Init()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
+	return true;
 }
 
 /**
@@ -218,10 +224,6 @@ void RenderI420Sample::Draw(int screenW, int screenH)
  */
 void RenderI420Sample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteTextures(1, &m_TextureId);
-		m_ProgramObj = GL_NONE;
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteTexture(m_TextureId);
 }

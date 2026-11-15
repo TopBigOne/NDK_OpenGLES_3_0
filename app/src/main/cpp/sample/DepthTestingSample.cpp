@@ -46,12 +46,8 @@ DepthTestingSample::~DepthTestingSample()
 
 }
 
-void DepthTestingSample::Init()
+bool DepthTestingSample::Init()
 {
-	if (m_ProgramObj)
-	{
-		return;
-	}
 	//create RGBA texture
 	glGenTextures(1, &m_TextureId);
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
@@ -99,7 +95,7 @@ void DepthTestingSample::Init()
 	else
 	{
 		LOGCATE("DepthTestingSample::Init create program fail");
-		return;
+		return false;
 	}
 
 	GLfloat vertices[] = {
@@ -174,6 +170,7 @@ void DepthTestingSample::Init()
 				 GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
 
+	return true;
 }
 
 void DepthTestingSample::LoadImage(NativeImage *pImage)
@@ -222,16 +219,10 @@ void DepthTestingSample::Draw(int screenW, int screenH)
 
 void DepthTestingSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(1, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(1, &m_TextureId);
-		m_ProgramObj = GL_NONE;
-		m_VaoId = GL_NONE;
-		m_TextureId = GL_NONE;
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteBuffers(1, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteTexture(m_TextureId);
 
 }
 

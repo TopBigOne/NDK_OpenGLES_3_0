@@ -14,8 +14,9 @@
 
 CopyTextureExample::CopyTextureExample()
 {
-	m_VaoIds[0] = GL_NONE;
-	m_VboIds[0] = GL_NONE;
+	// Init 失败时基类会调用 Destroy，数组里每个句柄都必须有确定的初值
+	m_VaoIds[0] = m_VaoIds[1] = GL_NONE;
+	m_VboIds[0] = m_VboIds[1] = m_VboIds[2] = m_VboIds[3] = GL_NONE;
 
 	m_ImageTextureId = GL_NONE;
 	m_FboTextureId = GL_NONE;
@@ -44,7 +45,7 @@ void CopyTextureExample::LoadImage(NativeImage *pImage)
 	}
 }
 
-void CopyTextureExample::Init()
+bool CopyTextureExample::Init()
 {
 	//顶点坐标
 	GLfloat vVertices[] = {
@@ -118,8 +119,8 @@ void CopyTextureExample::Init()
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATD("CopyTextureExample::Init m_ProgramObj == GL_NONE");
-		return;
+		LOGCATE("CopyTextureExample::Init m_ProgramObj == GL_NONE");
+		return false;
 	}
 	m_SamplerLoc = glGetUniformLocation(m_ProgramObj, "s_TextureMap");
 	m_FboSamplerLoc = glGetUniformLocation(m_FboProgramObj, "s_TextureMap");
@@ -195,9 +196,10 @@ void CopyTextureExample::Init()
 	if (!CreateFrameBufferObj())
 	{
 		LOGCATE("CopyTextureExample::Init CreateFrameBufferObj fail");
-		return;
+		return false;
 	}
 
+	return true;
 }
 
 void CopyTextureExample::Draw(int screenW, int screenH)
@@ -242,40 +244,13 @@ void CopyTextureExample::Draw(int screenW, int screenH)
 
 void CopyTextureExample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-	}
-
-	if (m_FboProgramObj)
-	{
-		glDeleteProgram(m_FboProgramObj);
-	}
-
-	if (m_ImageTextureId)
-	{
-		glDeleteTextures(1, &m_ImageTextureId);
-	}
-
-	if (m_FboTextureId)
-	{
-		glDeleteTextures(1, &m_FboTextureId);
-	}
-
-	if (m_VboIds[0])
-	{
-		glDeleteBuffers(4, m_VboIds);
-	}
-
-	if (m_VaoIds[0])
-	{
-		glDeleteVertexArrays(2, m_VaoIds);
-	}
-
-	if (m_FboId)
-	{
-		glDeleteFramebuffers(1, &m_FboId);
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteProgram(m_FboProgramObj);
+	GLUtils::DeleteTexture(m_ImageTextureId);
+	GLUtils::DeleteTexture(m_FboTextureId);
+	GLUtils::DeleteBuffers(4, m_VboIds);
+	GLUtils::DeleteVertexArrays(2, m_VaoIds);
+	GLUtils::DeleteFramebuffer(m_FboId);
 
 }
 

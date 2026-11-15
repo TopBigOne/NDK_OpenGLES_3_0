@@ -14,8 +14,10 @@
 
 BlitFrameBufferExample::BlitFrameBufferExample()
 {
-	m_VaoIds[0] = GL_NONE;
-	m_VboIds[0] = GL_NONE;
+	// 原来只把数组第 0 个元素清零；Init 失败时基类会调用 Destroy，
+	// 其余元素若是随机值会被当作对象名删除，因此全部清零
+	m_VaoIds[0] = m_VaoIds[1] = GL_NONE;
+	m_VboIds[0] = m_VboIds[1] = m_VboIds[2] = m_VboIds[3] = GL_NONE;
 
 	m_ImageTextureId = GL_NONE;
 	m_FboTextureId = GL_NONE;
@@ -44,7 +46,7 @@ void BlitFrameBufferExample::LoadImage(NativeImage *pImage)
 	}
 }
 
-void BlitFrameBufferExample::Init()
+bool BlitFrameBufferExample::Init()
 {
 	//顶点坐标
 	GLfloat vVertices[] = {
@@ -118,8 +120,8 @@ void BlitFrameBufferExample::Init()
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATD("BlitFrameBufferExample::Init m_ProgramObj == GL_NONE");
-		return;
+		LOGCATE("BlitFrameBufferExample::Init create program fail");
+		return false;
 	}
 	m_SamplerLoc = glGetUniformLocation(m_ProgramObj, "s_TextureMap");
 	m_FboSamplerLoc = glGetUniformLocation(m_FboProgramObj, "s_TextureMap");
@@ -195,9 +197,9 @@ void BlitFrameBufferExample::Init()
 	if (!CreateFrameBufferObj())
 	{
 		LOGCATE("BlitFrameBufferExample::Init CreateFrameBufferObj fail");
-		return;
+		return false;
 	}
-
+	return true;
 }
 
 void BlitFrameBufferExample::Draw(int screenW, int screenH)
@@ -236,41 +238,13 @@ void BlitFrameBufferExample::Draw(int screenW, int screenH)
 
 void BlitFrameBufferExample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-	}
-
-	if (m_FboProgramObj)
-	{
-		glDeleteProgram(m_FboProgramObj);
-	}
-
-	if (m_ImageTextureId)
-	{
-		glDeleteTextures(1, &m_ImageTextureId);
-	}
-
-	if (m_FboTextureId)
-	{
-		glDeleteTextures(1, &m_FboTextureId);
-	}
-
-	if (m_VboIds[0])
-	{
-		glDeleteBuffers(4, m_VboIds);
-	}
-
-	if (m_VaoIds[0])
-	{
-		glDeleteVertexArrays(2, m_VaoIds);
-	}
-
-	if (m_FboId)
-	{
-		glDeleteFramebuffers(1, &m_FboId);
-	}
-
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteProgram(m_FboProgramObj);
+	GLUtils::DeleteTexture(m_ImageTextureId);
+	GLUtils::DeleteTexture(m_FboTextureId);
+	GLUtils::DeleteBuffers(4, m_VboIds);
+	GLUtils::DeleteVertexArrays(2, m_VaoIds);
+	GLUtils::DeleteFramebuffer(m_FboId);
 }
 
 bool BlitFrameBufferExample::CreateFrameBufferObj()

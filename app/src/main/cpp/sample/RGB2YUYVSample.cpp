@@ -41,7 +41,7 @@ void RGB2YUYVSample::LoadImage(NativeImage *pImage)
 	}
 }
 
-void RGB2YUYVSample::Init()
+bool RGB2YUYVSample::Init()
 {
 	//顶点坐标
 	GLfloat vVertices[] = {
@@ -148,8 +148,8 @@ void RGB2YUYVSample::Init()
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATD("RGB2YUYVSample::Init m_ProgramObj == GL_NONE");
-		return;
+		LOGCATE("RGB2YUYVSample::Init create program fail");
+		return false;
 	}
 	m_SamplerLoc = glGetUniformLocation(m_ProgramObj, "s_TextureMap");
 	m_FboSamplerLoc = glGetUniformLocation(m_FboProgramObj, "s_TextureMap");
@@ -225,9 +225,9 @@ void RGB2YUYVSample::Init()
 	if (!CreateFrameBufferObj())
 	{
 		LOGCATE("RGB2YUYVSample::Init CreateFrameBufferObj fail");
-		return;
+		return false;
 	}
-
+	return true;
 }
 
 void RGB2YUYVSample::Draw(int screenW, int screenH)
@@ -286,40 +286,13 @@ void RGB2YUYVSample::Draw(int screenW, int screenH)
 
 void RGB2YUYVSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-	}
-
-	if (m_FboProgramObj)
-	{
-		glDeleteProgram(m_FboProgramObj);
-	}
-
-	if (m_ImageTextureId)
-	{
-		glDeleteTextures(1, &m_ImageTextureId);
-	}
-
-	if (m_FboTextureId)
-	{
-		glDeleteTextures(1, &m_FboTextureId);
-	}
-
-	if (m_VboIds[0])
-	{
-		glDeleteBuffers(4, m_VboIds);
-	}
-
-	if (m_VaoIds[0])
-	{
-		glDeleteVertexArrays(2, m_VaoIds);
-	}
-
-	if (m_FboId)
-	{
-		glDeleteFramebuffers(1, &m_FboId);
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteProgram(m_FboProgramObj);
+	GLUtils::DeleteTexture(m_ImageTextureId);
+	GLUtils::DeleteTexture(m_FboTextureId);
+	GLUtils::DeleteBuffers(4, m_VboIds);
+	GLUtils::DeleteVertexArrays(2, m_VaoIds);
+	GLUtils::DeleteFramebuffer(m_FboId);
 
 }
 

@@ -19,6 +19,8 @@ StencilTestingSample::StencilTestingSample()
 
 	m_TextureId = GL_NONE;
 	m_VaoId = GL_NONE;
+	m_VboIds[0] = GL_NONE;
+	m_FrameProgramObj = GL_NONE;
 
 	m_AngleX = 0;
 	m_AngleY = 0;
@@ -32,12 +34,8 @@ StencilTestingSample::~StencilTestingSample()
 
 }
 
-void StencilTestingSample::Init()
+bool StencilTestingSample::Init()
 {
-	if (m_ProgramObj)
-	{
-		return;
-	}
 	//create RGBA texture
 	glGenTextures(1, &m_TextureId);
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
@@ -164,7 +162,7 @@ void StencilTestingSample::Init()
 	else
 	{
 		LOGCATE("StencilTestingSample::Init create program fail");
-		return;
+		return false;
 	}
 
 	GLfloat vertices[] = {
@@ -238,7 +236,7 @@ void StencilTestingSample::Init()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImage.width, m_RenderImage.height, 0, GL_RGBA,
 				 GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
-
+	return true;
 }
 
 void StencilTestingSample::LoadImage(NativeImage *pImage)
@@ -322,16 +320,12 @@ void StencilTestingSample::Draw(int screenW, int screenH)
 
 void StencilTestingSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(1, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(1, &m_TextureId);
-		m_ProgramObj = GL_NONE;
-		m_VaoId = GL_NONE;
-		m_TextureId = GL_NONE;
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	// 描边用的第二个 program 原来从未释放
+	GLUtils::DeleteProgram(m_FrameProgramObj);
+	GLUtils::DeleteBuffers(1, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteTexture(m_TextureId);
 
 }
 

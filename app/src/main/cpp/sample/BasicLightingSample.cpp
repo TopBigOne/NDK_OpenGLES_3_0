@@ -39,6 +39,8 @@ BasicLightingSample::BasicLightingSample()
 	// 初始化 OpenGL 对象 ID
 	m_TextureId = GL_NONE;
 	m_VaoId = GL_NONE;
+	// Init 失败后基类会调用 Destroy，Destroy 会读取所有句柄，因此必须在构造时清零
+	m_VboIds[0] = GL_NONE;
 
 	// 初始化旋转角度
 	m_AngleX = 0;
@@ -65,13 +67,9 @@ BasicLightingSample::~BasicLightingSample()
  * @brief 初始化 OpenGL 资源
  * @details 创建着色器程序、纹理对象、VAO 和 VBO，配置光照相关的着色器
  */
-void BasicLightingSample::Init()
+bool BasicLightingSample::Init()
 {
-	// 避免重复初始化
-	if (m_ProgramObj)
-	{
-		return;
-	}
+	// 是否已初始化由 GLSampleBase 管理，这里不再自行判断
 
 	// ==================== 创建纹理对象 ====================
 	glGenTextures(1, &m_TextureId);                                        // 生成纹理 ID
@@ -157,7 +155,7 @@ void BasicLightingSample::Init()
 	else
 	{
 		LOGCATE("BasicLightingSample::Init create program fail");
-		return;
+		return false;
 	}
 
 	// ==================== 定义立方体顶点数据 ====================
@@ -229,7 +227,7 @@ void BasicLightingSample::Init()
 	glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);                                   // 解绑 VBO
 
 	glBindVertexArray(GL_NONE);                                               // 解绑 VAO
-
+	return true;
 }
 
 /**
@@ -300,13 +298,11 @@ void BasicLightingSample::Draw(int screenW, int screenH)
  */
 void BasicLightingSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);       // 删除着色器程序
-		glDeleteBuffers(1, m_VboIds);        // 删除 VBO
-		glDeleteVertexArrays(1, &m_VaoId);   // 删除 VAO
-		glDeleteTextures(1, &m_TextureId);   // 删除纹理
-	}
+	// 各对象独立释放并清零（原实现删除后不清零，且全部挂在 program 非 0 条件下）
+	GLUtils::DeleteProgram(m_ProgramObj);       // 删除着色器程序
+	GLUtils::DeleteBuffers(1, m_VboIds);        // 删除 VBO
+	GLUtils::DeleteVertexArray(m_VaoId);        // 删除 VAO
+	GLUtils::DeleteTexture(m_TextureId);        // 删除纹理
 }
 
 

@@ -52,10 +52,8 @@ BigHeadSample::~BigHeadSample()
 
 }
 
-void BigHeadSample::Init()
+bool BigHeadSample::Init()
 {
-	if(m_ProgramObj)
-		return;
 
 	char vShaderStr[] =
             "#version 300 es\n"
@@ -97,6 +95,7 @@ void BigHeadSample::Init()
 	else
 	{
 		LOGCATE("BigHeadSample::Init create program fail");
+		return false;
 	}
 
 	CalculateMesh(0);
@@ -126,6 +125,7 @@ void BigHeadSample::Init()
 	GO_CHECK_GL_ERROR();
 
 	glBindVertexArray(GL_NONE);
+	return true;
 }
 
 void BigHeadSample::LoadImage(NativeImage *pImage)
@@ -197,14 +197,11 @@ void BigHeadSample::Draw(int screenW, int screenH)
 
 void BigHeadSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteTextures(1, &m_TextureId);
-		glDeleteBuffers(2, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		m_ProgramObj = GL_NONE;
-	}
+	// 纹理在 Draw 中懒创建，同样在这里释放；helper 会把句柄清零，重新 Init 后 Draw 会重新上传
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteTexture(m_TextureId);
+	GLUtils::DeleteBuffers(2, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
 }
 
 

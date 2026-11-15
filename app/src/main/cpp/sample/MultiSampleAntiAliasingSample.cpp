@@ -28,6 +28,12 @@ MultiSampleAntiAliasingSample::MultiSampleAntiAliasingSample()
 	m_FboId = GL_NONE;
 	m_RboId = GL_NONE;
 	m_FboId2 = GL_NONE;
+
+	// Init 失败时基类会调用 Destroy，所有句柄都必须有确定的初值
+	m_ProgramObj2 = GL_NONE;
+	m_TextureId2 = GL_NONE;
+	m_MultiSampleTexId = GL_NONE;
+	m_VboIds[0] = m_VboIds[1] = m_VboIds[2] = GL_NONE;
 }
 
 MultiSampleAntiAliasingSample::~MultiSampleAntiAliasingSample()
@@ -36,11 +42,9 @@ MultiSampleAntiAliasingSample::~MultiSampleAntiAliasingSample()
 
 }
 
-void MultiSampleAntiAliasingSample::Init()
+bool MultiSampleAntiAliasingSample::Init()
 {
-	if(m_ProgramObj)
-		return;
-	
+
 	//create RGBA texture
 	glGenTextures(1, &m_TextureId);
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
@@ -105,6 +109,11 @@ void MultiSampleAntiAliasingSample::Init()
 
 	m_ProgramObj = GLUtils::CreateProgram(vColShaderStr, fColShaderStr);
 	m_ProgramObj2 = GLUtils::CreateProgram(vShaderStr, fShaderStr);
+	if (m_ProgramObj == GL_NONE || m_ProgramObj2 == GL_NONE)
+	{
+		LOGCATE("MultiSampleAntiAliasingSample::Init create program fail");
+		return false;
+	}
 
 	GLfloat verticesCoords[] = {
 			-1.0f,  1.0f, 0.0f,  // Position 0
@@ -153,6 +162,7 @@ void MultiSampleAntiAliasingSample::Init()
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImage.width, m_RenderImage.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
+	return true;
 }
 
 void MultiSampleAntiAliasingSample::LoadImage(NativeImage *pImage)
@@ -250,18 +260,18 @@ void MultiSampleAntiAliasingSample::Draw(int screenW, int screenH)
 
 void MultiSampleAntiAliasingSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(3, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(1, &m_TextureId);
-		glDeleteFramebuffers(1, &m_FboId);
-		glDeleteRenderbuffers(1, &m_RboId);
-		glDeleteTextures(1, &m_TextureId2);
-		glDeleteFramebuffers(1, &m_FboId2);
-		glDeleteTextures(1, &m_MultiSampleTexId);
-	}
+	// 原实现漏删了 m_ProgramObj2；FBO/多重采样纹理是在 Draw 中懒创建的，这里一并释放，
+	// 清零后下次 Init/Draw 会重新创建
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteProgram(m_ProgramObj2);
+	GLUtils::DeleteBuffers(3, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteTexture(m_TextureId);
+	GLUtils::DeleteFramebuffer(m_FboId);
+	GLUtils::DeleteRenderbuffer(m_RboId);
+	GLUtils::DeleteTexture(m_TextureId2);
+	GLUtils::DeleteFramebuffer(m_FboId2);
+	GLUtils::DeleteTexture(m_MultiSampleTexId);
 }
 
 void MultiSampleAntiAliasingSample::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)

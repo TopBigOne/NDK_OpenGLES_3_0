@@ -78,11 +78,8 @@ void TimeTunnelSample::LoadImage(NativeImage *pImage)
 }
 
 // 初始化 OpenGL 资源
-void TimeTunnelSample::Init()
+bool TimeTunnelSample::Init()
 {
-    // 如果已经初始化过，直接返回
-    if(m_ProgramObj)
-        return;
 
 	// 顶点坐标数组（NDC 标准化设备坐标，范围 -1 到 1）
 	// 四个顶点组成一个矩形平面
@@ -206,8 +203,8 @@ void TimeTunnelSample::Init()
 	// 检查着色器程序是否创建成功
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATD("TimeTunnelSample::Init m_ProgramObj == GL_NONE");
-		return;
+		LOGCATE("TimeTunnelSample::Init m_ProgramObj == GL_NONE");
+		return false;
 	}
 	// 获取普通渲染程序的 uniform 变量位置
 	m_SamplerLoc = glGetUniformLocation(m_ProgramObj, "s_TextureMap");
@@ -306,9 +303,10 @@ void TimeTunnelSample::Init()
 	if (!CreateFrameBufferObj())
 	{
 		LOGCATE("TimeTunnelSample::Init CreateFrameBufferObj fail");
-		return;
+		return false;
 	}
 
+	return true;
 }
 
 // 绘制函数：执行离屏渲染和普通渲染两个阶段
@@ -384,50 +382,14 @@ void TimeTunnelSample::Draw(int screenW, int screenH)
 // 销毁函数：释放所有 OpenGL 资源
 void TimeTunnelSample::Destroy()
 {
-	// 删除普通渲染着色器程序
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		m_ProgramObj = GL_NONE;
-	}
-
-	// 删除 FBO 渲染着色器程序
-	if (m_FboProgramObj)
-	{
-		glDeleteProgram(m_FboProgramObj);
-		m_FboProgramObj = GL_NONE;
-	}
-
-	// 删除图像纹理
-	if (m_ImageTextureId)
-	{
-		glDeleteTextures(1, &m_ImageTextureId);
-	}
-
-	// 删除 FBO 纹理
-	if (m_FboTextureId)
-	{
-		glDeleteTextures(1, &m_FboTextureId);
-	}
-
-	// 删除所有 VBO
-	if (m_VboIds[0])
-	{
-		glDeleteBuffers(4, m_VboIds);
-	}
-
-	// 删除所有 VAO
-	if (m_VaoIds[0])
-	{
-		glDeleteVertexArrays(2, m_VaoIds);
-	}
-
-	// 删除 FBO
-	if (m_FboId)
-	{
-		glDeleteFramebuffers(1, &m_FboId);
-	}
-
+	// helper 删除后会把句柄清零，保证重复调用安全、上下文重建后可以重新 Init
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteProgram(m_FboProgramObj);
+	GLUtils::DeleteTexture(m_ImageTextureId);
+	GLUtils::DeleteTexture(m_FboTextureId);
+	GLUtils::DeleteBuffers(4, m_VboIds);
+	GLUtils::DeleteVertexArrays(2, m_VaoIds);
+	GLUtils::DeleteFramebuffer(m_FboId);
 }
 
 // 创建帧缓冲对象（FBO）

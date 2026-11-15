@@ -27,13 +27,18 @@ GeometryShader3Sample::GeometryShader3Sample()
 
 GeometryShader3Sample::~GeometryShader3Sample()
 {
-
+    // Model/Shader 持有 GL 对象，由 Destroy()（GL 线程或丢弃模式）释放并置空；
+    // 这里只兜底释放 CPU 侧对象，不调用任何 GL 函数。
+    delete m_pModel;
+    m_pModel = nullptr;
+    delete m_pShader;
+    m_pShader = nullptr;
+    delete m_pShader2;
+    m_pShader2 = nullptr;
 }
 
-void GeometryShader3Sample::Init()
+bool GeometryShader3Sample::Init()
 {
-	if(m_pModel != nullptr && m_pShader != nullptr)
-		return;
 
 	char vShaderStr[] =
 			"#version 320 es\n"
@@ -159,6 +164,16 @@ void GeometryShader3Sample::Init()
 
     m_pShader = new Shader(vShaderStr, fShaderStr);
     m_pShader2 = new Shader(vShaderStr2, fShaderStr2, gShaderStr2);
+
+    // 模型文件缺失/解析失败时 meshes 为空；任一着色器编译失败时 ID 为 0。
+    // 这些情况下继续 Draw 只会对无效对象调用 GL，交给基类走失败流程（Destroy 会释放已创建的对象）。
+    if (m_pModel->meshes.empty() || m_pShader->ID == 0 || m_pShader2->ID == 0)
+    {
+        LOGCATE("GeometryShader3Sample::Init fail, meshes=%zu, shader=%u, shader2=%u",
+                m_pModel->meshes.size(), m_pShader->ID, m_pShader2->ID);
+        return false;
+    }
+    return true;
 }
 
 void GeometryShader3Sample::LoadImage(NativeImage *pImage)

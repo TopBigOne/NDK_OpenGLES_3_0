@@ -35,10 +35,8 @@ PortraitStayColorExample::~PortraitStayColorExample()
 	NativeImageUtil::FreeNativeImage(&m_MappingImage);
 }
 
-void PortraitStayColorExample::Init()
+bool PortraitStayColorExample::Init()
 {
-	if(m_ProgramObj)
-		return;
 	//create RGBA texture
 	glGenTextures(1, &m_TextureId);
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
@@ -118,6 +116,7 @@ void PortraitStayColorExample::Init()
 	else
 	{
 		LOGCATE("PortraitStayColorExample::Init create program fail");
+		return false;
 	}
 
 	GLfloat verticesCoords[] = {
@@ -181,6 +180,7 @@ void PortraitStayColorExample::Init()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_MappingImage.width, m_MappingImage.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_MappingImage.ppPlane[0]);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
 
+	return true;
 }
 
 void PortraitStayColorExample::LoadImage(NativeImage *pImage)
@@ -239,15 +239,12 @@ void PortraitStayColorExample::Draw(int screenW, int screenH)
 
 void PortraitStayColorExample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(3, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(1, &m_TextureId);
-		glDeleteTextures(1, &m_GrayTexId);
-		glDeleteTextures(1, &m_MappingTexId);
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteBuffers(3, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteTexture(m_TextureId);
+	GLUtils::DeleteTexture(m_GrayTexId);
+	GLUtils::DeleteTexture(m_MappingTexId);
 }
 
 

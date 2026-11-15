@@ -21,9 +21,8 @@ void ComputeShaderSample::LoadImage(NativeImage *pImage)
 	}
 }
 
-void ComputeShaderSample::Init()
+bool ComputeShaderSample::Init()
 {
-	if(m_ProgramObj != GL_NONE) return;
 
 	char fComputeShaderStr[] = "#version 310 es\n"
 							   "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
@@ -37,6 +36,11 @@ void ComputeShaderSample::Init()
 
 	// Load the shaders and get a linked program object
 	m_ProgramObj = GLUtils::LoadComputeShader(fComputeShaderStr);
+	if (m_ProgramObj == GL_NONE)
+	{
+		LOGCATE("ComputeShaderSample::Init create compute program fail");
+		return false;
+	}
 
 	glGenBuffers(1, &m_DataBuffer);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_DataBuffer);
@@ -44,6 +48,7 @@ void ComputeShaderSample::Init()
 	m_DataSize = sizeof(data);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(data), data, GL_DYNAMIC_COPY);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_DataBuffer);//binding=0 buffer
+	return true;
 }
 
 void ComputeShaderSample::Draw(int screenW, int screenH)
@@ -72,10 +77,6 @@ void ComputeShaderSample::Draw(int screenW, int screenH)
 
 void ComputeShaderSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(1, &m_DataBuffer);
-		m_ProgramObj = GL_NONE;
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteBuffer(m_DataBuffer);
 }

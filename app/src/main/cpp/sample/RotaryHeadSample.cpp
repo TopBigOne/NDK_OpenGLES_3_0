@@ -36,6 +36,8 @@ RotaryHeadSample::RotaryHeadSample()
 	m_MVPMatLoc = GL_NONE;
 
 	m_TextureId = GL_NONE;
+	m_VaoId = GL_NONE;
+	m_VboIds[0] = m_VboIds[1] = GL_NONE;
 
 	m_AngleX = 0;
 	m_AngleY = 0;
@@ -52,10 +54,8 @@ RotaryHeadSample::~RotaryHeadSample()
 
 }
 
-void RotaryHeadSample::Init()
+bool RotaryHeadSample::Init()
 {
-	if(m_ProgramObj)
-		return;
 
 	char vShaderStr[] =
             "#version 300 es\n"
@@ -97,6 +97,7 @@ void RotaryHeadSample::Init()
 	else
 	{
 		LOGCATE("RotaryHeadSample::Init create program fail");
+		return false;
 	}
 
 	CalculateMesh(0);
@@ -126,6 +127,7 @@ void RotaryHeadSample::Init()
 	GO_CHECK_GL_ERROR();
 
 	glBindVertexArray(GL_NONE);
+	return true;
 }
 
 void RotaryHeadSample::LoadImage(NativeImage *pImage)
@@ -195,14 +197,11 @@ void RotaryHeadSample::Draw(int screenW, int screenH)
 
 void RotaryHeadSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteTextures(1, &m_TextureId);
-		glDeleteBuffers(2, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		m_ProgramObj = GL_NONE;
-	}
+	// 纹理在 Draw 中懒创建，清零后上下文重建时会重新上传
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteTexture(m_TextureId);
+	GLUtils::DeleteBuffers(2, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
 }
 
 

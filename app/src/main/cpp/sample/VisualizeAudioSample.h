@@ -30,7 +30,7 @@ public:
 
     virtual void LoadShortArrData(short *const pShortArr, int arrSize);
 
-    virtual void Init();
+    virtual bool Init();
 	virtual void Draw(int screenW, int screenH);
 
 	virtual void Destroy();

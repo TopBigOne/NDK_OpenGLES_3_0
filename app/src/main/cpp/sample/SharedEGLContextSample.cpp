@@ -16,7 +16,8 @@
 SharedEGLContextSample::SharedEGLContextSample()
 {
 	m_VaoId = GL_NONE;
-	m_VboIds[0] = GL_NONE;
+	for (int i = 0; i < 4; ++i) m_VboIds[i] = GL_NONE;
+	m_LooperStarted = false;
 	m_ImageTextureId = GL_NONE;
 	m_FboTextureId = GL_NONE;
 	m_FboProgramObj = GL_NONE;
@@ -39,9 +40,8 @@ void SharedEGLContextSample::LoadImage(NativeImage *pImage)
 	}
 }
 
-void SharedEGLContextSample::Init()
+bool SharedEGLContextSample::Init()
 {
-    if(m_ProgramObj != GL_NONE) return;
 
 	//顶点坐标
 	GLfloat vVertices[] = {
@@ -123,8 +123,8 @@ void SharedEGLContextSample::Init()
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATD("SharedEGLContextSample::Init m_ProgramObj == GL_NONE");
-		return;
+		LOGCATE("SharedEGLContextSample::Init create program fail");
+		return false;
 	}
 
 	// 生成 VBO ，加载顶点数据和索引数据
@@ -184,9 +184,13 @@ void SharedEGLContextSample::Init()
 	m_GLEnv.callbackCtx   = this;
     LOGCATD("SharedEGLContextSample::Init sharedCtx=%p", m_GLEnv.sharedCtx);
 
+	// 上下文重建后会再次走到这里：此前 Destroy 已经让旧的工作线程释放资源并退出，
+	// GetInstance 会创建新的 looper，以新的当前上下文作为共享上下文重新初始化
     GLRenderLooper::GetInstance()->postMessage(MSG_SurfaceCreated, &m_GLEnv);
 
 	GLRenderLooper::GetInstance()->postMessage(MSG_SurfaceChanged, m_RenderImage.width, m_RenderImage.height);
+	m_LooperStarted = true;
+	return true;
 }
 
 void SharedEGLContextSample::Draw(int screenW, int screenH)
@@ -223,30 +227,21 @@ void SharedEGLContextSample::OnAsyncRenderDone(void *callback, int fboTexId) {
 
 void SharedEGLContextSample::Destroy()
 {
-	GLRenderLooper::GetInstance()->postMessage(MSG_SurfaceDestroyed);
-	GLRenderLooper::ReleaseInstance();
-	if (m_ProgramObj)
+	// 工作线程持有自己的共享 EGLContext 和其中创建的 FBO/纹理/VAO，无论主上下文是否已丢失
+	// （丢弃模式下也一样）都必须通知它在自己的线程里释放并退出。
+	// ReleaseInstance 会等待线程处理完队列中的消息后再返回。
+	if (m_LooperStarted)
 	{
-		glDeleteProgram(m_ProgramObj);
+		GLRenderLooper::GetInstance()->postMessage(MSG_SurfaceDestroyed);
+		GLRenderLooper::ReleaseInstance();
+		m_LooperStarted = false;
 	}
+	// FBO 纹理属于工作线程，由它负责删除；这里只清掉引用
+	m_FboTextureId = GL_NONE;
 
-	if (m_FboProgramObj)
-	{
-		glDeleteProgram(m_FboProgramObj);
-	}
-
-	if (m_ImageTextureId)
-	{
-		glDeleteTextures(1, &m_ImageTextureId);
-	}
-
-	if (m_VboIds[0])
-	{
-		glDeleteBuffers(4, m_VboIds);
-	}
-
-	if (m_VaoId)
-	{
-		glDeleteVertexArrays(1, &m_VaoId);
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteProgram(m_FboProgramObj);
+	GLUtils::DeleteTexture(m_ImageTextureId);
+	GLUtils::DeleteBuffers(4, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
 }

@@ -25,6 +25,8 @@ BeatingHeartSample::BeatingHeartSample()
 	m_TextureId = GL_NONE;
 	// 初始化顶点数组对象ID
 	m_VaoId = GL_NONE;
+	// Init 失败时基类会调用 Destroy，未生成的句柄必须是 0，否则会误删别的对象
+	m_VboIds[0] = m_VboIds[1] = m_VboIds[2] = GL_NONE;
 
 	// 初始化X轴旋转角度
 	m_AngleX = 0;
@@ -43,12 +45,8 @@ BeatingHeartSample::~BeatingHeartSample()
 	NativeImageUtil::FreeNativeImage(&m_RenderImage);
 }
 
-void BeatingHeartSample::Init()
+bool BeatingHeartSample::Init()
 {
-	// 如果着色器程序已创建，直接返回
-	if(m_ProgramObj)
-		return;
-
 	// 创建RGBA纹理对象（本示例中未使用纹理，保留用于扩展）
 	glGenTextures(1, &m_TextureId);
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
@@ -153,6 +151,7 @@ void BeatingHeartSample::Init()
 	else
 	{
 		LOGCATE("BeatingHeartSample::Init create program fail");
+		return false;
 	}
 
 	// 定义全屏四边形顶点坐标（NDC坐标系）
@@ -197,6 +196,7 @@ void BeatingHeartSample::Init()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_VboIds[2]);
 
 	glBindVertexArray(GL_NONE);
+	return true;
 }
 
 void BeatingHeartSample::LoadImage(NativeImage *pImage)
@@ -244,14 +244,11 @@ void BeatingHeartSample::Draw(int screenW, int screenH)
 
 void BeatingHeartSample::Destroy()
 {
-	// 清理OpenGL资源
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(3, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(1, &m_TextureId);
-	}
+	// 清理OpenGL资源：helper 会把句柄清零，重复调用/上下文丢失时都安全
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteBuffers(3, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteTexture(m_TextureId);
 }
 
 /**

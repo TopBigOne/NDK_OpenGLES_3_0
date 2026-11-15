@@ -19,6 +19,8 @@ GLTransitionExample_3::GLTransitionExample_3()
         m_TextureIds[i] = GL_NONE;
     }
 	m_VaoId = GL_NONE;
+	// Init 失败后基类会调用 Destroy，Destroy 会读取所有句柄，因此必须在构造时清零
+	for (int i = 0; i < 3; ++i) m_VboIds[i] = GL_NONE;
 
 	m_AngleX = 0;
 	m_AngleY = 0;
@@ -37,10 +39,9 @@ GLTransitionExample_3::~GLTransitionExample_3()
     }
 }
 
-void GLTransitionExample_3::Init()
+bool GLTransitionExample_3::Init()
 {
-	if(m_ProgramObj)
-		return;
+	// 是否已初始化由 GLSampleBase 管理，这里不再自行判断
     for (int i = 0; i < BF_IMG_NUM; ++i) {
         glGenTextures(1, &m_TextureIds[i]);
         glBindTexture(GL_TEXTURE_2D, m_TextureIds[i]);
@@ -101,6 +102,7 @@ void GLTransitionExample_3::Init()
 	else
 	{
 		LOGCATE("GLTransitionExample_3::Init create program fail");
+		return false;
 	}
 
 	GLfloat verticesCoords[] = {
@@ -155,6 +157,7 @@ void GLTransitionExample_3::Init()
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImages[i].width, m_RenderImages[i].height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_RenderImages[i].ppPlane[0]);
         glBindTexture(GL_TEXTURE_2D, GL_NONE);
     }
+	return true;
 }
 
 void GLTransitionExample_3::LoadImage(NativeImage *pImage)
@@ -201,13 +204,11 @@ void GLTransitionExample_3::Draw(int screenW, int screenH)
 
 void GLTransitionExample_3::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(3, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(BF_IMG_NUM, m_TextureIds);
-	}
+	// 各对象独立释放并清零（原实现删除后不清零，再次 Destroy 会重复删除）
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteBuffers(3, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteTextures(BF_IMG_NUM, m_TextureIds);
 }
 
 void GLTransitionExample_3::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)

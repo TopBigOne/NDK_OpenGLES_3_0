@@ -60,12 +60,8 @@ TextRenderSample::~TextRenderSample()
  * 初始化方法
  * 加载字体、创建着色器程序、设置 OpenGL 状态
  */
-void TextRenderSample::Init()
+bool TextRenderSample::Init()
 {
-	// 防止重复初始化
-	if(m_ProgramObj)
-		return;
-
 	// 加载 ASCII 字符字形（英文字符）
 	LoadFacesByASCII();
 
@@ -123,6 +119,7 @@ void TextRenderSample::Init()
 	else
 	{
 		LOGCATE("TextRenderSample::Init create program fail");
+		return false;
 	}
 
 	// 生成顶点数组对象 VAO
@@ -144,7 +141,7 @@ void TextRenderSample::Init()
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImage.width, m_RenderImage.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
-
+	return true;
 }
 
 /**
@@ -461,24 +458,22 @@ void TextRenderSample::LoadFacesByUnicode(const wchar_t* text, int size) {
  */
 void TextRenderSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		// 删除着色器程序
-		glDeleteProgram(m_ProgramObj);
-		// 删除 VBO
-		glDeleteBuffers(1, &m_VboId);
-		// 删除 VAO
-		glDeleteVertexArrays(1, &m_VaoId);
-		// 删除背景纹理
-		glDeleteTextures(1, &m_TextureId);
+	// 删除着色器程序
+	GLUtils::DeleteProgram(m_ProgramObj);
+	// 删除 VBO
+	GLUtils::DeleteBuffer(m_VboId);
+	// 删除 VAO
+	GLUtils::DeleteVertexArray(m_VaoId);
+	// 删除背景纹理
+	GLUtils::DeleteTexture(m_TextureId);
 
-		// 删除所有字符纹理
-		std::map<GLint, Character>::const_iterator iter;
-		for (iter = m_Characters.begin(); iter != m_Characters.end(); iter++)
-		{
-			glDeleteTextures(1, &m_Characters[iter->first].textureID);
-		}
+	// 删除所有字符纹理，并清空字形表：Init 会重新加载字形，而 std::map::insert
+	// 不会覆盖已有键，不清空的话重新 Init 后仍会使用旧上下文里的纹理 ID
+	for (auto &item : m_Characters)
+	{
+		GLUtils::DeleteTexture(item.second.textureID);
 	}
+	m_Characters.clear();
 }
 
 /**

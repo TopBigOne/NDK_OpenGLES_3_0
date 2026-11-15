@@ -29,10 +29,8 @@ GeometryShader2Sample::~GeometryShader2Sample()
 
 }
 
-void GeometryShader2Sample::Init()
+bool GeometryShader2Sample::Init()
 {
-	if(m_pModel != nullptr && m_pShader != nullptr)
-		return;
 
 	char vShaderStr[] =
 			"#version 320 es\n"
@@ -180,6 +178,15 @@ void GeometryShader2Sample::Init()
     {
         m_pShader = new Shader(vShaderStr, fNoTextureShaderStr, gShaderStr);
     }
+
+    // 模型文件不存在/解析失败时没有任何网格；着色器编译失败时 ID 为 0。
+    // 两种情况都返回 false，由基类调用 Destroy 回收已经 new 出来的对象。
+    if (m_pModel->meshes.empty() || m_pShader->ID == GL_NONE)
+    {
+        LOGCATE("GeometryShader2Sample::Init load model or create program fail");
+        return false;
+    }
+    return true;
 }
 
 void GeometryShader2Sample::LoadImage(NativeImage *pImage)

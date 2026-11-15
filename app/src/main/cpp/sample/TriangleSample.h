@@ -54,7 +54,7 @@ public:
 	 * @brief 初始化 OpenGL 资源
 	 * @details 创建并编译顶点着色器和片段着色器
 	 */
-	virtual void Init();
+	virtual bool Init();
 
 	/**
 	 * @brief 渲染函数

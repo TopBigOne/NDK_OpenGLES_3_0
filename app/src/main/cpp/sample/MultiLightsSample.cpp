@@ -78,13 +78,8 @@ MultiLightsSample::~MultiLightsSample()
  * @brief 初始化 OpenGL 资源
  * @details 创建着色器程序、纹理对象、VAO 和 VBO，配置聚光灯相关的着色器
  */
-void MultiLightsSample::Init()
+bool MultiLightsSample::Init()
 {
-	// 避免重复初始化
-	if (m_ProgramObj)
-	{
-		return;
-	}
 
 	// ==================== 创建纹理对象 ====================
 	glGenTextures(1, &m_TextureId);                                        // 生成纹理 ID
@@ -209,7 +204,7 @@ void MultiLightsSample::Init()
 	else
 	{
 		LOGCATE("MultiLightsSample::Init create program fail");
-		return;
+		return false;
 	}
 
 	// ==================== 定义立方体顶点数据 ====================
@@ -289,6 +284,7 @@ void MultiLightsSample::Init()
 				 GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);                // 上传 RGBA 图像数据
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);                                    // 解绑纹理
 
+	return true;
 }
 
 /**
@@ -369,16 +365,10 @@ void MultiLightsSample::Draw(int screenW, int screenH)
  */
 void MultiLightsSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);       // 删除着色器程序
-		glDeleteBuffers(1, m_VboIds);        // 删除 VBO
-		glDeleteVertexArrays(1, &m_VaoId);   // 删除 VAO
-		glDeleteTextures(1, &m_TextureId);   // 删除纹理
-		m_ProgramObj = GL_NONE;
-		m_VaoId = GL_NONE;
-		m_TextureId = GL_NONE;
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);       // 删除着色器程序
+	GLUtils::DeleteBuffers(1, m_VboIds);        // 删除 VBO
+	GLUtils::DeleteVertexArray(m_VaoId);        // 删除 VAO
+	GLUtils::DeleteTexture(m_TextureId);        // 删除纹理
 
 }
 

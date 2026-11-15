@@ -39,8 +39,10 @@ void NV21TextureMapSample::LoadImage(NativeImage *pImage)
  * 初始化 NV21 渲染器
  * 创建着色器程序和纹理对象
  */
-void NV21TextureMapSample::Init()
+bool NV21TextureMapSample::Init()
 {
+	// 原实现没有“已初始化”守卫，框架每帧调用 Init 时会反复创建 program 和两张纹理并泄漏；
+	// 现在由 GLSampleBase 保证每个上下文只 Init 一次。
 	// 顶点着色器: 传递顶点位置和纹理坐标
 	char vShaderStr[] =
 			"#version 300 es                            \n"
@@ -100,6 +102,11 @@ void NV21TextureMapSample::Init()
 
 	// 编译链接着色器程序
 	m_ProgramObj= GLUtils::CreateProgram(vShaderStr, fShaderStr, m_VertexShader, m_FragmentShader);
+	if (m_ProgramObj == GL_NONE)
+	{
+		LOGCATE("NV21TextureMapSample::Init create program fail");
+		return false;
+	}
 
 	// 获取纹理采样器的 uniform 位置
 	m_ySamplerLoc = glGetUniformLocation (m_ProgramObj, "y_texture" );
@@ -111,6 +118,7 @@ void NV21TextureMapSample::Init()
 
 	m_yTextureId = textureIds[0];   // Y 平面纹理
 	m_uvTextureId = textureIds[1];  // UV 平面纹理
+	return true;
 }
 
 /**
@@ -209,12 +217,9 @@ void NV21TextureMapSample::Draw(int screenW, int screenH)
  */
 void NV21TextureMapSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteTextures(1, &m_yTextureId);
-		glDeleteTextures(1, &m_uvTextureId);
-		m_ProgramObj = GL_NONE;
-	}
+	// 各对象独立释放并清零，重复调用安全
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteTexture(m_yTextureId);
+	GLUtils::DeleteTexture(m_uvTextureId);
 
 }

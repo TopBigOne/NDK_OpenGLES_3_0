@@ -25,6 +25,7 @@ FaceSlenderSample::FaceSlenderSample()
 
 	m_TextureId = GL_NONE;
 	m_VaoId = GL_NONE;
+	m_VboIds[0] = m_VboIds[1] = m_VboIds[2] = GL_NONE;
 
 	m_AngleX = 0;
 	m_AngleY = 0;
@@ -41,10 +42,8 @@ FaceSlenderSample::~FaceSlenderSample()
 
 }
 
-void FaceSlenderSample::Init()
+bool FaceSlenderSample::Init()
 {
-	if(m_ProgramObj)
-		return;
 
 	char vShaderStr[] =
             "#version 300 es\n"
@@ -133,6 +132,7 @@ void FaceSlenderSample::Init()
 	else
 	{
 		LOGCATE("FaceSlenderSample::Init create program fail");
+		return false;
 	}
 
 	GLfloat verticesCoords[] = {
@@ -178,7 +178,7 @@ void FaceSlenderSample::Init()
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_VboIds[2]);
 	glBindVertexArray(GL_NONE);
-
+	return true;
 }
 
 void FaceSlenderSample::LoadImage(NativeImage *pImage)
@@ -263,13 +263,11 @@ void FaceSlenderSample::Draw(int screenW, int screenH)
 
 void FaceSlenderSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(3, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(1, &m_TextureId);
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteBuffers(3, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	// 纹理在 Draw 中懒创建；清零后下一次 Init/Draw 会重新创建
+	GLUtils::DeleteTexture(m_TextureId);
 }
 
 

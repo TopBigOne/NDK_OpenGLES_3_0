@@ -22,6 +22,10 @@ ParticlesSample::ParticlesSample()
 
 	m_TextureId = GL_NONE;
 	m_VaoId = GL_NONE;
+	// 原来未初始化；Init 失败时基类会调用 Destroy，未创建的句柄必须为 0
+	m_ParticlesVertexVboId = GL_NONE;
+	m_ParticlesPosVboId = GL_NONE;
+	m_ParticlesColorVboId = GL_NONE;
 
 	m_AngleX = 0;
 	m_AngleY = 0;
@@ -63,12 +67,8 @@ void ParticlesSample::LoadImage(NativeImage *pImage)
 
 }
 
-void ParticlesSample::Init()
+bool ParticlesSample::Init()
 {
-	if (m_ProgramObj)
-	{
-		return;
-	}
 
 	//create RGBA texture
 	glGenTextures(1, &m_TextureId);
@@ -119,9 +119,13 @@ void ParticlesSample::Init()
 	else
 	{
 		LOGCATE("ParticlesSample::Init create program fail");
-		return;
+		return false;
 	}
 
+	// 这两块是上传给 GL 的派生数据，每次 Init 重新分配；Destroy 中释放并置空，
+	// 保证上下文重建后再次 Init 不会泄漏上一次的内存
+	delete[] m_pParticlesPosData;
+	delete[] m_pParticlesColorData;
 	m_pParticlesPosData = new GLfloat[MAX_PARTICLES * 3];
 	m_pParticlesColorData = new GLubyte[MAX_PARTICLES * 4];
 
@@ -251,7 +255,7 @@ void ParticlesSample::Init()
 
 	//m_TextureId = GLUtils::loadDDS("/sdcard/particle.DDS");
 	GO_CHECK_GL_ERROR();
-
+	return true;
 }
 
 void ParticlesSample::Draw(int screenW, int screenH)
@@ -283,16 +287,18 @@ void ParticlesSample::Draw(int screenW, int screenH)
 
 void ParticlesSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(1, &m_TextureId);
-		glDeleteBuffers(1, &m_ParticlesPosVboId);
-		glDeleteBuffers(1, &m_ParticlesVertexVboId);
-		glDeleteBuffers(1, &m_ParticlesPosVboId);
-		m_ProgramObj = GL_NONE;
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteTexture(m_TextureId);
+	// 原来把 m_ParticlesPosVboId 删了两次，m_ParticlesColorVboId 从未释放
+	GLUtils::DeleteBuffer(m_ParticlesVertexVboId);
+	GLUtils::DeleteBuffer(m_ParticlesPosVboId);
+	GLUtils::DeleteBuffer(m_ParticlesColorVboId);
+
+	delete[] m_pParticlesPosData;
+	m_pParticlesPosData = nullptr;
+	delete[] m_pParticlesColorData;
+	m_pParticlesColorData = nullptr;
 }
 
 

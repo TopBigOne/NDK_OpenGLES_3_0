@@ -83,7 +83,14 @@ public class MyGLSurfaceView extends GLSurfaceView implements ScaleGestureDetect
 
     public MyGLSurfaceView(Context context, MyGLRender glRender, AttributeSet attrs) {
         super(context, attrs);
-        this.setEGLContextClientVersion(2);
+        // native 层所有着色器都是 #version 300 es，并且使用 VAO/PBO/UBO 等 ES 3.0 接口，
+        // 必须明确请求 ES 3 上下文（同时让配置选择器只挑选支持 EGL_OPENGL_ES3_BIT 的配置），
+        // 不能依赖驱动在请求 ES 2 时“顺便”返回 3.x 上下文。必须在 setEGLConfigChooser 之前调用。
+        this.setEGLContextClientVersion(3);
+        // 切后台调用 onPause() 时尽量保留 EGLContext，回到前台无需重建全部 GL 资源。
+        // 这只是优化：系统仍可能销毁上下文（或驱动报告上下文丢失），
+        // 届时 onSurfaceCreated 会再次回调，native 层会丢弃旧句柄并重新初始化示例。
+        setPreserveEGLContextOnPause(true);
         mGLRender = glRender;
         /*If no setEGLConfigChooser method is called,
         then by default the view will choose an RGB_888 surface with a depth buffer depth of at least 16 bits.*/

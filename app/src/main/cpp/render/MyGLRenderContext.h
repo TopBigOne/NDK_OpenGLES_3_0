@@ -47,6 +47,8 @@ public:
 
 private:
 	static MyGLRenderContext *m_pContext;
+	// 保护 m_pContext 的创建与销毁
+	static std::mutex s_InstanceMutex;
 
 	// Java 层在 UI 线程调用 SetXXX，GLSurfaceView 在 GL 线程调用 OnDrawFrame，
 	// 两边都会访问 m_pCurSample，必须用同一把锁保护。

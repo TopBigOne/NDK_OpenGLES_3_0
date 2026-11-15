@@ -21,6 +21,7 @@ BezierCurveSample::BezierCurveSample() {
 
     m_TextureId = GL_NONE;
     m_VaoId = GL_NONE;
+    m_VboId = GL_NONE;
 
     m_AngleX = 0;
     m_AngleY = 0;
@@ -43,13 +44,9 @@ BezierCurveSample::~BezierCurveSample() {
 
 }
 
-void BezierCurveSample::Init() {
-    if (m_ProgramObj)
-        return;
-
-    if (m_pCoordSystemSample != nullptr) {
-        m_pCoordSystemSample->Init();
-    }
+bool BezierCurveSample::Init() {
+    // 内嵌的 m_pCoordSystemSample 只用来接收图片，Draw 中对它的绘制已被注释掉，
+    // 因此这里不再为它创建 GL 资源（Init/Draw/Destroy 现在由框架通过基类入口统一调用）。
 
     char vShaderStr[] =
             "#version 300 es\n"
@@ -122,6 +119,7 @@ void BezierCurveSample::Init() {
     m_ProgramObj = GLUtils::CreateProgram(vShaderStr, fShaderStr, m_VertexShader, m_FragmentShader);
     if (!m_ProgramObj) {
         LOGCATE("BezierCurveSample::Init create program fail");
+        return false;
     }
 
     int tDataSize = POINTS_NUM * POINTS_PRE_TRIANGLES;
@@ -164,7 +162,7 @@ void BezierCurveSample::Init() {
 
     glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
     glBindVertexArray(GL_NONE);
-
+    return true;
 }
 
 void BezierCurveSample::LoadImage(NativeImage *pImage) {
@@ -291,14 +289,13 @@ void BezierCurveSample::Draw(int screenW, int screenH) {
 }
 
 void BezierCurveSample::Destroy() {
-    if (m_ProgramObj) {
-        glDeleteProgram(m_ProgramObj);
-        glDeleteBuffers(1, &m_VboId);
-        glDeleteVertexArrays(1, &m_VaoId);
-    }
+    GLUtils::DeleteProgram(m_ProgramObj);
+    GLUtils::DeleteBuffer(m_VboId);
+    GLUtils::DeleteVertexArray(m_VaoId);
 
     if (m_pCoordSystemSample != nullptr) {
-        m_pCoordSystemSample->Destroy();
+        // 走基类入口：未初始化时是空操作；在“上下文丢失”模式下同样只丢弃句柄
+        m_pCoordSystemSample->ReleaseGLResources();
     }
 }
 

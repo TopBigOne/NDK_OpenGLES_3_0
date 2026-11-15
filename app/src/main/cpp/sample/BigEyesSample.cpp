@@ -31,6 +31,7 @@ BigEyesSample::BigEyesSample()
 
 	m_TextureId = GL_NONE;
 	m_VaoId = GL_NONE;
+	m_VboIds[0] = m_VboIds[1] = m_VboIds[2] = GL_NONE;
 
 	m_AngleX = 0;
 	m_AngleY = 0;
@@ -47,10 +48,8 @@ BigEyesSample::~BigEyesSample()
 
 }
 
-void BigEyesSample::Init()
+bool BigEyesSample::Init()
 {
-	if(m_ProgramObj)
-		return;
 
 	// 顶点着色器：传递纹理坐标
 	char vShaderStr[] =
@@ -137,6 +136,7 @@ void BigEyesSample::Init()
 	else
 	{
 		LOGCATE("BigEyesSample::Init create program fail");
+		return false;
 	}
 
 	GLfloat verticesCoords[] = {
@@ -183,7 +183,7 @@ void BigEyesSample::Init()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_VboIds[2]);
 
 	glBindVertexArray(GL_NONE);
-
+	return true;
 }
 
 void BigEyesSample::LoadImage(NativeImage *pImage)
@@ -263,13 +263,11 @@ void BigEyesSample::Draw(int screenW, int screenH)
 
 void BigEyesSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(3, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(1, &m_TextureId);
-	}
+	// 纹理在 Draw 中懒创建，清零后上下文重建时会重新上传
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteBuffers(3, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteTexture(m_TextureId);
 }
 
 

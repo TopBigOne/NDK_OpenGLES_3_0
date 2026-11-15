@@ -198,15 +198,101 @@ GLuint GLUtils::CreateProgramWithGeometryShader(const char *pVertexShaderSource,
     return program;
 }
 
+// 当前线程的“丢弃 GL 对象”嵌套计数，见 ScopedAbandonGLObjects
+static thread_local int s_AbandonGLObjectsDepth = 0;
+
+GLUtils::ScopedAbandonGLObjects::ScopedAbandonGLObjects()
+{
+    ++s_AbandonGLObjectsDepth;
+}
+
+GLUtils::ScopedAbandonGLObjects::~ScopedAbandonGLObjects()
+{
+    --s_AbandonGLObjectsDepth;
+}
+
+bool GLUtils::IsAbandoningGLObjects()
+{
+    return s_AbandonGLObjectsDepth > 0;
+}
+
+// 数组里是否存在非 0 句柄；全为 0 时不必调用 GL
+static bool HasAnyName(GLsizei n, const GLuint *names)
+{
+    if (names == nullptr) return false;
+    for (GLsizei i = 0; i < n; ++i)
+    {
+        if (names[i] != 0) return true;
+    }
+    return false;
+}
+
+static void ZeroNames(GLsizei n, GLuint *names)
+{
+    if (names == nullptr) return;
+    for (GLsizei i = 0; i < n; ++i)
+    {
+        names[i] = 0;
+    }
+}
+
 void GLUtils::DeleteProgram(GLuint &program)
 {
-    LOGCATD("GLUtils::DeleteProgram");
     if (program)
     {
-        glUseProgram(0);
-        glDeleteProgram(program);
+        if (!IsAbandoningGLObjects())
+        {
+            LOGCATD("GLUtils::DeleteProgram program=%u", program);
+            glUseProgram(0);
+            glDeleteProgram(program);
+        }
         program = 0;
     }
+}
+
+void GLUtils::DeleteShader(GLuint &shader)
+{
+    if (shader)
+    {
+        if (!IsAbandoningGLObjects()) glDeleteShader(shader);
+        shader = 0;
+    }
+}
+
+void GLUtils::DeleteTextures(GLsizei n, GLuint *textures)
+{
+    if (HasAnyName(n, textures) && !IsAbandoningGLObjects()) glDeleteTextures(n, textures);
+    ZeroNames(n, textures);
+}
+
+void GLUtils::DeleteBuffers(GLsizei n, GLuint *buffers)
+{
+    if (HasAnyName(n, buffers) && !IsAbandoningGLObjects()) glDeleteBuffers(n, buffers);
+    ZeroNames(n, buffers);
+}
+
+void GLUtils::DeleteVertexArrays(GLsizei n, GLuint *arrays)
+{
+    if (HasAnyName(n, arrays) && !IsAbandoningGLObjects()) glDeleteVertexArrays(n, arrays);
+    ZeroNames(n, arrays);
+}
+
+void GLUtils::DeleteFramebuffers(GLsizei n, GLuint *framebuffers)
+{
+    if (HasAnyName(n, framebuffers) && !IsAbandoningGLObjects()) glDeleteFramebuffers(n, framebuffers);
+    ZeroNames(n, framebuffers);
+}
+
+void GLUtils::DeleteRenderbuffers(GLsizei n, GLuint *renderbuffers)
+{
+    if (HasAnyName(n, renderbuffers) && !IsAbandoningGLObjects()) glDeleteRenderbuffers(n, renderbuffers);
+    ZeroNames(n, renderbuffers);
+}
+
+void GLUtils::DeleteTransformFeedbacks(GLsizei n, GLuint *ids)
+{
+    if (HasAnyName(n, ids) && !IsAbandoningGLObjects()) glDeleteTransformFeedbacks(n, ids);
+    ZeroNames(n, ids);
 }
 
 void GLUtils::CheckGLError(const char *pGLOperation)

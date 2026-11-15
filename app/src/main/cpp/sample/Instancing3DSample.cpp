@@ -18,6 +18,8 @@ Instancing3DSample::Instancing3DSample()
 
 	m_TextureId = GL_NONE;
 	m_VaoId = GL_NONE;
+	// Init 失败时基类会调用 Destroy，句柄必须有确定的初值
+	m_VboIds[0] = m_VboIds[1] = GL_NONE;
 
 	m_AngleX = 0;
 	m_AngleY = 0;
@@ -34,12 +36,8 @@ Instancing3DSample::~Instancing3DSample()
 
 }
 
-void Instancing3DSample::Init()
+bool Instancing3DSample::Init()
 {
-	if (m_ProgramObj)
-	{
-		return;
-	}
 	//create RGBA texture
 	glGenTextures(1, &m_TextureId);
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
@@ -155,7 +153,7 @@ void Instancing3DSample::Init()
 	else
 	{
 		LOGCATE("Instancing3DSample::Init create program fail");
-		return;
+		return false;
 	}
 
 	GLfloat vertices[] = {
@@ -257,6 +255,7 @@ void Instancing3DSample::Init()
 				 GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
 
+	return true;
 }
 
 void Instancing3DSample::LoadImage(NativeImage *pImage)
@@ -317,16 +316,10 @@ void Instancing3DSample::Draw(int screenW, int screenH)
 
 void Instancing3DSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(2, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(1, &m_TextureId);
-		m_ProgramObj = GL_NONE;
-		m_VaoId = GL_NONE;
-		m_TextureId = GL_NONE;
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteBuffers(2, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteTexture(m_TextureId);
 
 }
 

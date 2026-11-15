@@ -25,6 +25,7 @@ GLTransitionExample::GLTransitionExample()
     }
 	// 顶点数组对象 ID
 	m_VaoId = GL_NONE;
+	m_VboIds[0] = m_VboIds[1] = m_VboIds[2] = GL_NONE;  // Init 失败时 Destroy 依赖它们为 0
 
 	// X 轴和 Y 轴的旋转角度
 	m_AngleX = 0;
@@ -54,11 +55,8 @@ GLTransitionExample::~GLTransitionExample()
 /**
  * 初始化函数：创建着色器程序和 OpenGL 资源
  */
-void GLTransitionExample::Init()
+bool GLTransitionExample::Init()
 {
-	// 如果着色器程序已创建，直接返回
-	if(m_ProgramObj)
-		return;
 
 	// 为所有图片创建并配置纹理对象
     for (int i = 0; i < BF_IMG_NUM; ++i) {
@@ -316,6 +314,7 @@ void GLTransitionExample::Init()
 	else
 	{
 		LOGCATE("GLTransitionExample::Init create program fail");
+		return false;
 	}
 
 	// 顶点坐标数组（NDC 坐标系，范围 [-1, 1]）
@@ -379,6 +378,7 @@ void GLTransitionExample::Init()
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImages[i].width, m_RenderImages[i].height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_RenderImages[i].ppPlane[0]);
         glBindTexture(GL_TEXTURE_2D, GL_NONE);
     }
+	return true;
 }
 
 /**
@@ -447,13 +447,10 @@ void GLTransitionExample::Draw(int screenW, int screenH)
  */
 void GLTransitionExample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);           // 删除着色器程序
-		glDeleteBuffers(3, m_VboIds);             // 删除 VBO
-		glDeleteVertexArrays(1, &m_VaoId);        // 删除 VAO
-		glDeleteTextures(BF_IMG_NUM, m_TextureIds);  // 删除纹理
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);           // 删除着色器程序
+	GLUtils::DeleteBuffers(3, m_VboIds);             // 删除 VBO
+	GLUtils::DeleteVertexArray(m_VaoId);        // 删除 VAO
+	GLUtils::DeleteTextures(BF_IMG_NUM, m_TextureIds);  // 删除纹理
 }
 
 /**

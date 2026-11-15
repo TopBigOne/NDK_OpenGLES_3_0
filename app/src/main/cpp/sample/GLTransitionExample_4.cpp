@@ -19,6 +19,7 @@ GLTransitionExample_4::GLTransitionExample_4()
         m_TextureIds[i] = GL_NONE;
     }
 	m_VaoId = GL_NONE;
+	m_VboIds[0] = m_VboIds[1] = m_VboIds[2] = GL_NONE;  // Init 失败时 Destroy 依赖它们为 0
 
 	m_AngleX = 0;
 	m_AngleY = 0;
@@ -37,10 +38,8 @@ GLTransitionExample_4::~GLTransitionExample_4()
     }
 }
 
-void GLTransitionExample_4::Init()
+bool GLTransitionExample_4::Init()
 {
-	if(m_ProgramObj)
-		return;
     for (int i = 0; i < BF_IMG_NUM; ++i) {
         glGenTextures(1, &m_TextureIds[i]);
         glBindTexture(GL_TEXTURE_2D, m_TextureIds[i]);
@@ -148,6 +147,7 @@ void GLTransitionExample_4::Init()
 	else
 	{
 		LOGCATE("GLTransitionExample_4::Init create program fail");
+		return false;
 	}
 
 	GLfloat verticesCoords[] = {
@@ -202,6 +202,7 @@ void GLTransitionExample_4::Init()
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_RenderImages[i].width, m_RenderImages[i].height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_RenderImages[i].ppPlane[0]);
         glBindTexture(GL_TEXTURE_2D, GL_NONE);
     }
+	return true;
 }
 
 void GLTransitionExample_4::LoadImage(NativeImage *pImage)
@@ -248,13 +249,10 @@ void GLTransitionExample_4::Draw(int screenW, int screenH)
 
 void GLTransitionExample_4::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(3, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(BF_IMG_NUM, m_TextureIds);
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteBuffers(3, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteTextures(BF_IMG_NUM, m_TextureIds);
 }
 
 void GLTransitionExample_4::UpdateMVPMatrix(glm::mat4 &mvpMatrix, int angleX, int angleY, float ratio)

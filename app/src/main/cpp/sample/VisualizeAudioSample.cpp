@@ -56,9 +56,7 @@ VisualizeAudioSample::~VisualizeAudioSample() {
 
 }
 
-void VisualizeAudioSample::Init() {
-    if (m_ProgramObj)
-        return;
+bool VisualizeAudioSample::Init() {
     char vShaderStr[] =
             "#version 300 es\n"
             "layout(location = 0) in vec4 a_position;\n"
@@ -95,6 +93,7 @@ void VisualizeAudioSample::Init() {
         m_MVPMatLoc = glGetUniformLocation(m_ProgramObj, "u_MVPMatrix");
     } else {
         LOGCATE("VisualizeAudioSample::Init create program fail");
+        return false;
     }
 
     //upload RGBA image data
@@ -104,6 +103,7 @@ void VisualizeAudioSample::Init() {
 //                 GL_UNSIGNED_BYTE, m_RenderImage.ppPlane[0]);
 //    glBindTexture(GL_TEXTURE_2D, GL_NONE);
 
+    return true;
 }
 
 void VisualizeAudioSample::LoadImage(NativeImage *pImage) {
@@ -180,11 +180,10 @@ void VisualizeAudioSample::Destroy() {
     m_Cond.notify_all();
     lock.unlock();
 
-    if (m_ProgramObj) {
-        glDeleteProgram(m_ProgramObj);
-        glDeleteBuffers(2, m_VboIds);
-        glDeleteVertexArrays(1, &m_VaoId);
-    }
+    // VBO/VAO 在 Draw 中懒创建，helper 清零后上下文重建时 Draw 会重新创建
+    GLUtils::DeleteProgram(m_ProgramObj);
+    GLUtils::DeleteBuffers(2, m_VboIds);
+    GLUtils::DeleteVertexArray(m_VaoId);
 
 }
 

@@ -34,10 +34,8 @@ TextureBufferSample::~TextureBufferSample()
 
 }
 
-void TextureBufferSample::Init()
+bool TextureBufferSample::Init()
 {
-	if(m_ProgramObj)
-		return;
 	//create RGBA texture
 	glGenTextures(1, &m_TextureId);
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
@@ -85,6 +83,7 @@ void TextureBufferSample::Init()
 	else
 	{
 		LOGCATE("TextureBufferSample::Init create program fail");
+		return false;
 	}
 
 	GLfloat verticesCoords[] = {
@@ -150,6 +149,7 @@ void TextureBufferSample::Init()
 
 	glGenTextures(1, &m_TboTexId);
 
+	return true;
 }
 
 void TextureBufferSample::LoadImage(NativeImage *pImage)
@@ -202,15 +202,12 @@ void TextureBufferSample::Draw(int screenW, int screenH)
 
 void TextureBufferSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(3, m_VboIds);
-		glDeleteVertexArrays(1, &m_VaoId);
-		glDeleteTextures(1, &m_TextureId);
-		glDeleteBuffers(1, &m_TboId);
-		glDeleteTextures(1, &m_TboTexId);
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteBuffers(3, m_VboIds);
+	GLUtils::DeleteVertexArray(m_VaoId);
+	GLUtils::DeleteTexture(m_TextureId);
+	GLUtils::DeleteBuffer(m_TboId);
+	GLUtils::DeleteTexture(m_TboTexId);
 }
 
 

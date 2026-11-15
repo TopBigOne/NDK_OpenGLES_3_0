@@ -94,13 +94,15 @@ public:
 
     void Destroy()
     {
-        for (int i = 0; i < textures.size(); ++i) {
-            glDeleteTextures(1, &textures[i].id);
+        // 纹理由 Model::textures_loaded 统一持有，多个网格可能引用同一张纹理，
+        // 在这里按网格删除会对同一个名字重复 glDeleteTextures，所以只清空引用，由 Model 负责删除。
+        for (size_t i = 0; i < textures.size(); ++i) {
+            textures[i].id = GL_NONE;
         }
-        glDeleteBuffers(1, &EBO);
-        glDeleteBuffers(1, &VBO);
-        glDeleteVertexArrays(1, &VAO);
-        VAO = EBO = VBO = GL_NONE;
+        // 使用 GLUtils 的删除接口：删除后清零，上下文丢失时只清零不调用 glDelete
+        GLUtils::DeleteBuffer(EBO);
+        GLUtils::DeleteBuffer(VBO);
+        GLUtils::DeleteVertexArray(VAO);
     }
 
 private:

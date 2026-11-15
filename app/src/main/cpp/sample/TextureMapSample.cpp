@@ -47,8 +47,10 @@ TextureMapSample::~TextureMapSample()
  * @brief 初始化 OpenGL 资源
  * @details 创建纹理对象、编译着色器程序、获取 uniform 变量位置
  */
-void TextureMapSample::Init()
+bool TextureMapSample::Init()
 {
+	// 原实现没有任何“已初始化”守卫，而框架每帧都调用 Init，导致每帧新建纹理和 program 并泄漏；
+	// 现在由 GLSampleBase 保证每个上下文只 Init 一次。
 	// ==================== 创建并配置纹理 ====================
 	glGenTextures(1, &m_TextureId);              // 生成一个纹理对象
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);   // 绑定为 2D 纹理
@@ -97,8 +99,9 @@ void TextureMapSample::Init()
 	else
 	{
 		LOGCATE("TextureMapSample::Init create program fail");
+		return false;
 	}
-
+	return true;
 }
 
 /**
@@ -220,11 +223,8 @@ void TextureMapSample::LoadImage(NativeImage *pImage)
  */
 void TextureMapSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);          // 删除着色器程序
-		glDeleteTextures(1, &m_TextureId);      // 删除纹理对象
-		m_ProgramObj = GL_NONE;
-	}
+	// 各自独立释放并清零：原来纹理的删除挂在 program 非 0 的条件下，且纹理 ID 不清零
+	GLUtils::DeleteProgram(m_ProgramObj);          // 删除着色器程序
+	GLUtils::DeleteTexture(m_TextureId);           // 删除纹理对象
 
 }

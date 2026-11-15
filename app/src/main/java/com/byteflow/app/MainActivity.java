@@ -224,6 +224,11 @@ public class MainActivity extends AppCompatActivity implements AudioCollector.Ca
     @Override
     protected void onResume() {
         super.onResume();
+        // 与 onPause 中的 GLSurfaceView.onPause() 成对：恢复 GL 线程。
+        // 首次 onResume 时 GLSurfaceView 还没有在 onGlobalLayout 中创建，为 null。
+        if (mGLSurfaceView != null) {
+            mGLSurfaceView.onResume();
+        }
         mSensorManager.registerListener(this,
                 mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY),
                 SensorManager.SENSOR_DELAY_FASTEST);
@@ -271,6 +276,12 @@ public class MainActivity extends AppCompatActivity implements AudioCollector.Ca
     @Override
     protected void onPause() {
         super.onPause();
+        // GLSurfaceView 文档要求宿主 Activity 在 onPause/onResume 中转发调用。
+        // onPause() 会阻塞到 GL 线程真正暂停，这样之后的 onDestroy -> native_UnInit
+        // 销毁 native 渲染上下文时，GL 线程不会还在 onDrawFrame 里使用它。
+        if (mGLSurfaceView != null) {
+            mGLSurfaceView.onPause();
+        }
         mSensorManager.unregisterListener(this);
         if (mAudioCollector != null) {
             mAudioCollector.unInit();

@@ -16,6 +16,14 @@ BlendingSample::BlendingSample()
 	m_SamplerLoc = GL_NONE;
 	m_MVPMatLoc = GL_NONE;
 
+	// Init 失败后基类会调用 Destroy，Destroy 会读取所有句柄，因此必须在构造时清零
+	for (int i = 0; i < RENDER_IMG_NUM; ++i) m_TextureIds[i] = GL_NONE;
+	for (int i = 0; i < 3; ++i)
+	{
+		m_VaoIds[i] = GL_NONE;
+		m_VboIds[i] = GL_NONE;
+	}
+
 	m_AngleX = 0;
 	m_AngleY = 0;
 }
@@ -30,12 +38,9 @@ BlendingSample::~BlendingSample()
 
 }
 
-void BlendingSample::Init()
+bool BlendingSample::Init()
 {
-	if (m_ProgramObj)
-	{
-		return;
-	}
+	// 是否已初始化由 GLSampleBase 管理，这里不再自行判断
 	//create RGBA textures
 	glGenTextures(RENDER_IMG_NUM, m_TextureIds);
 	for (int i = 0; i < RENDER_IMG_NUM; ++i)
@@ -87,7 +92,7 @@ void BlendingSample::Init()
 	else
 	{
 		LOGCATE("BlendingSample::Init create program fail");
-		return;
+		return false;
 	}
 
 	GLfloat boxVertices[] = {
@@ -206,6 +211,9 @@ void BlendingSample::Init()
 		glBindTexture(GL_TEXTURE_2D, GL_NONE);
 	}
 
+	// 上下文重建后 Init 会再次执行，先清空，避免窗户位置被重复追加
+	windowsTrans.clear();
+	sorted.clear();
 	windowsTrans.push_back(glm::vec3(-1.5f,  0.0f, -0.48f));
 	windowsTrans.push_back(glm::vec3( 1.5f,  0.0f,  0.51f));
 	windowsTrans.push_back(glm::vec3( 0.0f,  0.0f,  0.7f));
@@ -218,7 +226,7 @@ void BlendingSample::Init()
 		sorted[distance] = windowsTrans[i];
 	}
 
-
+	return true;
 }
 
 void BlendingSample::LoadMultiImageWithIndex(int index, NativeImage *pImage)
@@ -301,14 +309,11 @@ void BlendingSample::Draw(int screenW, int screenH)
 
 void BlendingSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteBuffers(3, m_VboIds);
-		glDeleteVertexArrays(3, m_VaoIds);
-		glDeleteTextures(3, m_TextureIds);
-		m_ProgramObj = GL_NONE;
-	}
+	// 各对象独立释放并清零，重复调用安全
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteBuffers(3, m_VboIds);
+	GLUtils::DeleteVertexArrays(3, m_VaoIds);
+	GLUtils::DeleteTextures(RENDER_IMG_NUM, m_TextureIds);
 
 }
 

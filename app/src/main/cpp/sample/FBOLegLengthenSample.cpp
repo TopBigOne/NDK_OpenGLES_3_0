@@ -110,6 +110,9 @@ FBOLegLengthenSample::FBOLegLengthenSample()
 
 	// 默认拉伸模式：垂直8点拉伸（大长腿效果）
 	m_StretchMode = VERTICAL_STRETCH_8_POINTS;
+	m_bIsVerticalMode = true;
+	m_bSkipNextUpdate = false;
+	// 原来只有在类内初始化的 VAO/VBO 数组为 0，FBO 着色器句柄等已在上面清零
 }
 
 FBOLegLengthenSample::~FBOLegLengthenSample()
@@ -129,8 +132,17 @@ void FBOLegLengthenSample::LoadImage(NativeImage *pImage)
 	}
 }
 
-// 初始化OpenGL资源和拉伸参数
-void FBOLegLengthenSample::Init()
+bool FBOLegLengthenSample::Init()
+{
+	// m_FboProgramObj 此时一定为 0（基类保证只在未初始化状态调用 Init，Destroy 会清零句柄），
+	// 所以 InitOrUpdateGeometry 走完整初始化分支
+	bool ok = InitOrUpdateGeometry();
+	m_bSkipNextUpdate = ok;
+	return ok;
+}
+
+// 初始化OpenGL资源和拉伸参数；资源已存在时只做每帧的拉伸动画更新
+bool FBOLegLengthenSample::InitOrUpdateGeometry()
 {
 	// 设置拉伸模式：true为垂直拉伸（大长腿），false为水平拉伸
 	m_bIsVerticalMode = true;
@@ -506,14 +518,11 @@ void FBOLegLengthenSample::Init()
 				break;
 			default:
 				LOGCATD("FBOLegLengthenSample::Init don't support this mode");
-				return;
+				return false;
 		}
 
 
-		if (m_FboTextureId)
-		{
-			glDeleteTextures(1, &m_FboTextureId);
-		}
+		GLUtils::DeleteTexture(m_FboTextureId);
 
 		glGenTextures(1, &m_FboTextureId);
 		glBindTexture(GL_TEXTURE_2D, m_FboTextureId);
@@ -543,7 +552,7 @@ void FBOLegLengthenSample::Init()
 		}
 		glBindTexture(GL_TEXTURE_2D, GL_NONE);
 		glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
-		return;
+		return true;
 	}
 
 	// Model matrix vertical mirror
@@ -582,8 +591,8 @@ void FBOLegLengthenSample::Init()
 
 	if (m_ProgramObj == GL_NONE || m_FboProgramObj == GL_NONE)
 	{
-		LOGCATD("FBOLegLengthenSample::Init m_ProgramObj == GL_NONE");
-		return;
+		LOGCATE("FBOLegLengthenSample::Init create program fail");
+		return false;
 	}
 	m_SamplerLoc = glGetUniformLocation(m_ProgramObj, "s_TextureMap");
 	m_FboSamplerLoc = glGetUniformLocation(m_FboProgramObj, "s_TextureMap");
@@ -689,7 +698,7 @@ void FBOLegLengthenSample::Init()
 
 		default:
 			LOGCATD("FBOLegLengthenSample::Init don't support this mode");
-			return;
+			return false;
 	}
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_VboIds[5]);
@@ -748,13 +757,23 @@ void FBOLegLengthenSample::Init()
 	if (!CreateFrameBufferObj())
 	{
 		LOGCATE("FBOLegLengthenSample::Init CreateFrameBufferObj fail");
-		return;
+		return false;
 	}
+	return true;
 }
 
 void FBOLegLengthenSample::Draw(int screenW, int screenH)
 {
 	LOGCATV("FBOLegLengthenSample::Draw [screenW, screenH] = [%d, %d]", screenW, screenH);
+	// 每帧推进拉伸动画（旧框架里由每帧调用的 Init 完成）
+	if (m_bSkipNextUpdate)
+	{
+		m_bSkipNextUpdate = false;
+	}
+	else
+	{
+		InitOrUpdateGeometry();
+	}
 	//纹理就是一个“可以被采样的复杂的数据集合” 纹理作为 GPU 图像数据结构
 	//glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 	if (m_bIsVerticalMode)
@@ -840,41 +859,15 @@ void FBOLegLengthenSample::Draw(int screenW, int screenH)
 
 void FBOLegLengthenSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-	}
-
-	if (m_FboProgramObj)
-	{
-		glDeleteProgram(m_FboProgramObj);
-	}
-
-	if (m_ImageTextureId)
-	{
-		glDeleteTextures(1, &m_ImageTextureId);
-	}
-
-	if (m_FboTextureId)
-	{
-		glDeleteTextures(1, &m_FboTextureId);
-	}
-
-	if (m_VboIds[0])
-	{
-		glDeleteBuffers(6, m_VboIds);
-	}
-
-	if (m_VaoIds[0])
-	{
-		glDeleteVertexArrays(2, m_VaoIds);
-	}
-
-	if (m_FboId)
-	{
-		glDeleteFramebuffers(1, &m_FboId);
-	}
-
+	// m_FboProgramObj 清零后，下一次 Init 会重新走完整初始化分支
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteProgram(m_FboProgramObj);
+	GLUtils::DeleteTexture(m_ImageTextureId);
+	GLUtils::DeleteTexture(m_FboTextureId);
+	GLUtils::DeleteBuffers(6, m_VboIds);
+	GLUtils::DeleteVertexArrays(2, m_VaoIds);
+	GLUtils::DeleteFramebuffer(m_FboId);
+	m_bSkipNextUpdate = false;
 }
 
 bool FBOLegLengthenSample::CreateFrameBufferObj()

@@ -46,11 +46,10 @@ Model3DSample::~Model3DSample()
  * 初始化函数
  * 功能：创建着色器程序并使用 Assimp 加载 3D 模型
  */
-void Model3DSample::Init()
+bool Model3DSample::Init()
 {
-	// 防止重复初始化
-	if(m_pModel != nullptr && m_pShader != nullptr)
-		return;
+	// 是否已初始化由 GLSampleBase 管理；Model/Shader 持有 GL 对象，在 Destroy 中释放并置空，
+	// 因此这里可以无条件创建，不会泄漏
 
 	// ========== 顶点着色器 ==========
 	// 实现 Phong 光照模型的顶点着色器
@@ -151,6 +150,14 @@ void Model3DSample::Init()
     {
         m_pShader = new Shader(vShaderStr, fNoTextureShaderStr);  // 使用无纹理的着色器
     }
+
+    // 模型文件缺失/解析失败、或着色器编译失败时视为初始化失败，避免 Draw 中继续调用 GL
+    if (!m_pModel->IsLoaded() || m_pShader->ID == GL_NONE)
+    {
+        LOGCATE("Model3DSample::Init fail, modelLoaded=%d, program=%u", m_pModel->IsLoaded(), m_pShader->ID);
+        return false;
+    }
+    return true;
 }
 
 /**

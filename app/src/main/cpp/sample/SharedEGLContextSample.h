@@ -25,7 +25,7 @@ public:
 
 	virtual void LoadImage(NativeImage *pImage);
 
-	virtual void Init();
+	virtual bool Init();
 	virtual void Draw(int screenW, int screenH);
 
 	virtual void Destroy();
@@ -43,6 +43,10 @@ private:
 	mutex m_Mutex;
 	condition_variable m_Cond;
 	GLEnv m_GLEnv;
+	// 是否已经向 GLRenderLooper 投递过 MSG_SurfaceCreated（即工作线程持有共享上下文）。
+	// Destroy 只在为 true 时才通知工作线程销毁，避免 Init 失败后的 Destroy 去创建一个
+	// 从未初始化过 m_GLEnv 的 looper 并让它处理 MSG_SurfaceDestroyed。
+	bool m_LooperStarted;
 };
 
 

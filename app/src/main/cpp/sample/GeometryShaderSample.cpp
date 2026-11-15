@@ -21,10 +21,8 @@ GeometryShaderSample::~GeometryShaderSample()
 	NativeImageUtil::FreeNativeImage(&m_RenderImage);
 }
 
-void GeometryShaderSample::Init()
+bool GeometryShaderSample::Init()
 {
-    if(m_ProgramObj) return;
-
 	//create RGBA texture
 	glGenTextures(1, &m_TextureId);
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
@@ -94,6 +92,7 @@ void GeometryShaderSample::Init()
 	if (!m_ProgramObj)
 	{
 		LOGCATE("GeometryShaderSample::Init create program fail");
+		return false;
 	}
 
     //upload RGBA image data
@@ -118,6 +117,7 @@ void GeometryShaderSample::Init()
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
     glBindVertexArray(0);
+    return true;
 }
 
 void GeometryShaderSample::Draw(int screenW, int screenH)
@@ -158,14 +158,8 @@ void GeometryShaderSample::LoadImage(NativeImage *pImage)
 
 void GeometryShaderSample::Destroy()
 {
-	if (m_ProgramObj)
-	{
-		glDeleteProgram(m_ProgramObj);
-		glDeleteTextures(1, &m_TextureId);
-        glDeleteBuffers(1, &m_VboId);
-        glDeleteVertexArrays(1, &m_VaoId);
-		m_ProgramObj = GL_NONE;
-        m_VboId = GL_NONE;
-        m_VaoId = GL_NONE;
-	}
+	GLUtils::DeleteProgram(m_ProgramObj);
+	GLUtils::DeleteTexture(m_TextureId);
+	GLUtils::DeleteBuffer(m_VboId);
+	GLUtils::DeleteVertexArray(m_VaoId);
 }
